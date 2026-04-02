@@ -9,9 +9,11 @@ security-intel/
 ├── patterns/           # Vulnerability patterns by category
 │   ├── cross-chain/    # LayerZero, Wormhole, Axelar, etc.
 │   ├── defi/           # ERC4626, AMM, lending, etc.
-│   └── web/            # API auth, IDOR, SSRF, etc.
+│   ├── web/            # API auth, IDOR, SSRF, etc.
+│   └── secrets/        # Secrets detection patterns
 ├── checklists/         # Attack checklists by target type
-└── resources/          # Tools, references, links
+├── wordlists/          # Fuzzing wordlists
+└── tools/              # Tool references & commands
 ```
 
 ## Usage
@@ -32,6 +34,7 @@ Reference these during audit workflow:
 | Web | [access-control-bypass.md](patterns/web/access-control-bypass.md) | 403 bypass, header tricks, verb tampering |
 | Web | [file-upload-bypass.md](patterns/web/file-upload-bypass.md) | Extension, content-type, magic bytes bypass |
 | Web | [password-reset.md](patterns/web/password-reset.md) | Token leak, host header poisoning, ATO chains |
+| Secrets | [secrets-detection.md](patterns/secrets/secrets-detection.md) | API keys, JWT, framework secrets, regex patterns |
 
 ## Checklists
 
@@ -41,6 +44,13 @@ Reference these during audit workflow:
 | Web/API | [web-api-audit.md](checklists/web-api-audit.md) | Full Web/API security audit checklist |
 | 2FA | [2fa-bypass.md](checklists/2fa-bypass.md) | 2FA bypass techniques |
 | Rate Limit | [rate-limit-bypass.md](checklists/rate-limit-bypass.md) | Rate limiting bypass techniques |
+| Secrets | [secrets-scanning.md](checklists/secrets-scanning.md) | Secrets hunting checklist |
+
+## Tools
+
+| File | Description |
+|------|-------------|
+| [tools-reference.md](tools/tools-reference.md) | Quick reference for badsecrets, jsluice, ffuf, nuclei, etc. |
 
 ## Wordlists
 
