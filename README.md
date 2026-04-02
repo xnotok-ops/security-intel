@@ -26,6 +26,27 @@ Reference these during audit workflow:
 | Category | File | Description |
 |----------|------|-------------|
 | Cross-chain | [layerzero.md](patterns/cross-chain/layerzero.md) | LayerZero V2 vulnerability patterns |
+| DeFi | [admin-key-compromise.md](patterns/defi/admin-key-compromise.md) | Admin key & access control patterns |
+| Web | [api-security.md](patterns/web/api-security.md) | API version, verb tampering, parameter pollution |
+| Web | [ssrf.md](patterns/web/ssrf.md) | SSRF payloads, cloud metadata, bypasses |
+| Web | [access-control-bypass.md](patterns/web/access-control-bypass.md) | 403 bypass, header tricks, verb tampering |
+| Web | [file-upload-bypass.md](patterns/web/file-upload-bypass.md) | Extension, content-type, magic bytes bypass |
+| Web | [password-reset.md](patterns/web/password-reset.md) | Token leak, host header poisoning, ATO chains |
+
+## Checklists
+
+| Target | File | Description |
+|--------|------|-------------|
+| Smart Contract | [smart-contract.md](checklists/smart-contract.md) | Solidity audit checklist |
+| Web/API | [web-api-audit.md](checklists/web-api-audit.md) | Full Web/API security audit checklist |
+| 2FA | [2fa-bypass.md](checklists/2fa-bypass.md) | 2FA bypass techniques |
+| Rate Limit | [rate-limit-bypass.md](checklists/rate-limit-bypass.md) | Rate limiting bypass techniques |
+
+## Wordlists
+
+| File | Lines | Description |
+|------|-------|-------------|
+| [sensitive-paths.txt](wordlists/sensitive-paths.txt) | 6038 | Sensitive file/path discovery |
 
 ## Related Repos
 
