@@ -31,6 +31,10 @@ Reference these during audit workflow:
 | DeFi | [admin-key-compromise.md](patterns/defi/admin-key-compromise.md) | Admin key & access control patterns |
 | Web | [api-security.md](patterns/web/api-security.md) | API version, verb tampering, parameter pollution |
 | Web | [ssrf.md](patterns/web/ssrf.md) | SSRF payloads, cloud metadata, bypasses |
+| Web | [sqli.md](patterns/web/sqli.md) | SQLi techniques, union/error/time-based, NoSQL |
+| Web | [xss-bypass.md](patterns/web/xss-bypass.md) | XSS payloads, encoding bypasses, event handlers |
+| Web | [xxe.md](patterns/web/xxe.md) | XXE patterns, OOB exfil, file formats |
+| Web | [waf-bypass.md](patterns/web/waf-bypass.md) | WAF evasion, encoding, smuggling |
 | Web | [access-control-bypass.md](patterns/web/access-control-bypass.md) | 403 bypass, header tricks, verb tampering |
 | Web | [file-upload-bypass.md](patterns/web/file-upload-bypass.md) | Extension, content-type, magic bytes bypass |
 | Web | [password-reset.md](patterns/web/password-reset.md) | Token leak, host header poisoning, ATO chains |
@@ -42,6 +46,10 @@ Reference these during audit workflow:
 |--------|------|-------------|
 | Smart Contract | [smart-contract.md](checklists/smart-contract.md) | Solidity audit checklist |
 | Web/API | [web-api-audit.md](checklists/web-api-audit.md) | Full Web/API security audit checklist |
+| Security Headers | [security-headers.md](checklists/security-headers.md) | HTTP headers, CORS, cookie attributes |
+| TLS/SSL | [tls-audit.md](checklists/tls-audit.md) | TLS protocols, ciphers, certificates |
+| Cookie Security | [cookie-security.md](checklists/cookie-security.md) | Cookie attributes, session security |
+| Subdomain Takeover | [subdomain-takeover.md](checklists/subdomain-takeover.md) | DNS enumeration, vulnerable services |
 | 2FA | [2fa-bypass.md](checklists/2fa-bypass.md) | 2FA bypass techniques |
 | Rate Limit | [rate-limit-bypass.md](checklists/rate-limit-bypass.md) | Rate limiting bypass techniques |
 | Secrets | [secrets-scanning.md](checklists/secrets-scanning.md) | Secrets hunting checklist |
