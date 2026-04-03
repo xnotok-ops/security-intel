@@ -87,6 +87,152 @@ git log --oneline
 git diff HEAD~10
 ```
 
+### SecretFinder
+**Purpose**: Find secrets in JS files (regex-based)
+
+```bash
+# Install
+git clone https://github.com/m4ll0k/SecretFinder.git
+cd SecretFinder && pip install -r requirements.txt
+
+# Usage
+python SecretFinder.py -i https://target.com/app.js -o results.html
+python SecretFinder.py -i https://target.com/app.js -e    # Extract endpoints too
+```
+
+### jsleak
+**Purpose**: Find secrets/URLs in JS (Go-based, fast)
+
+```bash
+# Install
+go install github.com/byt3hx/jsleak@latest
+
+# Usage
+echo "https://target.com" | jsleak -s
+cat urls.txt | jsleak -s -l 50    # 50 concurrent
+```
+
+### Nosey Parker
+**Purpose**: Praetorian's high-performance secret scanner
+
+```bash
+# Install (Rust)
+cargo install noseyparker
+
+# Usage
+noseyparker scan --datastore np.db /path/to/code
+noseyparker report --datastore np.db
+noseyparker scan --datastore np.db --git-url https://github.com/org/repo
+```
+
+### GitDorker
+**Purpose**: GitHub dorking automation
+
+```bash
+# Install
+git clone https://github.com/obheda12/GitDorker.git
+pip install -r requirements.txt
+
+# Usage (requires GitHub token)
+python GitDorker.py -t GITHUB_TOKEN -q target.com -d dorks/alldorks.txt
+```
+
+### GitTools
+**Purpose**: Git repo dumper + extractor + finder
+
+```bash
+# Install
+git clone https://github.com/internetwache/GitTools.git
+
+# Dump exposed .git
+./GitTools/Dumper/gitdumper.sh https://target.com/.git/ ./output
+
+# Extract objects
+./GitTools/Extractor/extractor.sh ./output ./extracted
+
+# Find .git dirs
+./GitTools/Finder/gitfinder.py -i urls.txt
+```
+
+### Detect-Secrets
+**Purpose**: Yelp's pre-commit secret detection
+
+```bash
+# Install
+pip install detect-secrets
+
+# Scan
+detect-secrets scan > .secrets.baseline
+detect-secrets scan /path/to/code
+
+# Audit
+detect-secrets audit .secrets.baseline
+```
+
+### Git-Secrets
+**Purpose**: AWS git hooks for secrets
+
+```bash
+# Install
+brew install git-secrets
+
+# Setup in repo
+git secrets --install
+git secrets --register-aws
+
+# Scan
+git secrets --scan
+git secrets --scan-history
+```
+
+### KeyHacks
+**Purpose**: API key validation & exploitation
+
+```bash
+# Clone
+git clone https://github.com/streaak/keyhacks.git
+
+# Reference for validating leaked keys:
+# - AWS, GCP, Azure keys
+# - Stripe, Twilio, SendGrid
+# - GitHub, GitLab tokens
+# - Slack, Discord webhooks
+# Check keyhacks/README.md for validation commands
+```
+
+### github-search
+**Purpose**: GitHub code/commit search automation
+
+```bash
+# Install
+git clone https://github.com/gwen001/github-search.git
+pip install -r requirements.txt
+
+# Usage
+python github-dorks.py -t GITHUB_TOKEN -d target.com
+python github-subdomains.py -t GITHUB_TOKEN -d target.com
+```
+
+### Secrets Patterns DB
+**Purpose**: Regex patterns for secret detection
+
+```bash
+# Clone for reference patterns
+git clone https://github.com/mazen160/secrets-patterns-db.git
+
+# Use patterns with grep/nuclei/custom tools
+# patterns/db contains categorized regex
+```
+
+### secrets.ninja
+**Purpose**: Online secret validation
+
+```
+https://secrets.ninja
+- Paste API key to validate
+- Supports AWS, GCP, Stripe, etc.
+```
+
 ---
 
 ## Web Fuzzing & Recon
@@ -248,6 +394,32 @@ pip install trufflehog
 brew install trufflehog gitleaks
 
 echo "Done! Make sure ~/go/bin is in your PATH"
+```
+
+---
+
+## Specialized Hunting Tools
+
+### Hardcoded Token Hunter
+**Purpose**: Find hardcoded tokens in repos
+
+```bash
+# Clone
+git clone https://github.com/KingOfBugbounty/Hardcoded-Token-Hunter.git
+
+# Usage - search for hardcoded tokens in target org
+# Requires GitHub token
+```
+
+### Dependency Confusion Hunter
+**Purpose**: Find dependency confusion vulnerabilities
+
+```bash
+# Clone
+git clone https://github.com/KingOfBugbounty/Dependency-Confusion-Hunter.git
+
+# Check if internal packages can be hijacked via public registries
+# npm, pip, gems
 ```
 
 ---
