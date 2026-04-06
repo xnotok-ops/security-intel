@@ -1,8 +1,10 @@
 # Perp DEX Vulnerability Patterns
 
-**Source:** GTE Perps & Launchpad — Code4rena (Aug-Sep 2025, $103K pool)
-**Report:** https://code4rena.com/reports/2025-08-gte-perps-and-launchpad
-**Results:** 10 High, 25 Medium across Perps + Launchpad
+**Source:** GTE Perps & Launchpad + GTE Spot CLOB & Router — Code4rena (2025)
+**Reports:** 
+- Perps: https://code4rena.com/reports/2025-08-gte-perps-and-launchpad (10H, 25M)
+- Spot: https://code4rena.com/reports/2025-07-gte-spot-clob-and-router (3H, 4M)
+**Total Patterns:** 31
 **Extracted:** April 2026
 
 ---
@@ -232,3 +234,91 @@ Minting uses reserves (excluding fees), burning uses balances (including fees). 
 | Margin logic bypass | GMX-style perps |
 | Expired order pricing | Any CLOB-based DEX |
 | Emergency shutdown bypass | Common in multi-module protocols |
+
+---
+
+## APPENDIX: Spot CLOB Patterns (from GTE Spot CLOB & Router)
+
+**Source:** GTE Spot CLOB & Router — Code4rena (Jul-Aug 2025, $63K pool)
+**Report:** https://code4rena.com/reports/2025-07-gte-spot-clob-and-router
+**Results:** 3 High, 4 Medium
+
+---
+
+## Category 11: Linked List / Data Structure Integrity
+
+### CLOB-DS-01: prevOrderId Not Persisted (Memory vs Storage)
+**Severity:** High | **Source:** GTE Spot H-01
+
+`addOrderToBook` passes order as `memory`. `_updateLimitPostOrder` sets `order.prevOrderId = tailOrder.id` — but this write is to memory, never persisted to storage. Entire double-linked list is broken: `prevOrderId` always null. Removing orders corrupts `limit.tailOrder`, leading to DoS when book is full.
+
+**Checklist:**
+- [ ] Are linked list updates writing to storage, not memory copies?
+- [ ] After adding order, is `prevOrderId` readable from storage?
+- [ ] Test: add 3 orders to same limit, remove middle one, verify list integrity
+
+### CLOB-DS-02: Tree Size Doesn't Shrink on Tail-Only Removal
+**Severity:** Medium | **Source:** GTE Spot M-03
+
+When book is full and worst order is removed, only tail order of that limit is deleted. If limit has multiple orders, the limit (tree node) persists → `tree.size()` unchanged. Next order posting bypasses `maxNumLimitsPerSide` check (uses `==`). Book grows indefinitely.
+
+**Checklist:**
+- [ ] When removing for capacity, does code remove entire limit or just one order?
+- [ ] Is tree size check `>=` instead of `==`?
+
+---
+
+## Category 12: Dust / Lot Size Edge Cases
+
+### CLOB-DUST-01: Dust Orders Block Order Posting
+**Severity:** High | **Source:** GTE Spot H-02
+
+Partial fills can reduce maker order amount below `minLimitOrderAmountInBase` — no post-fill minimum check. Remaining dust order stays on book. Next incoming order matching this dust gets `quoteDelta = 0` (rounding) → reverts with `ZeroCostTrade`.
+
+**Checklist:**
+- [ ] After partial fill, is remaining order amount checked against minimum?
+- [ ] Should orders below minimum be auto-removed after partial fill?
+
+### CLOB-DUST-02: FOK Orders Revert on Sub-LotSize Residual
+**Severity:** Medium | **Source:** GTE Spot M-02
+
+FOK order checks `newOrder.amount > 0` for full-fill. But if residual amount < `lotSizeInBase`, it should be treated as filled (dust). Breaks multi-hop swaps via router where Uniswap output doesn't align with CLOB lot size.
+
+**Checklist:**
+- [ ] Does FOK check use `amount >= lotSize` instead of `amount > 0`?
+- [ ] Can router output amounts always align with CLOB lot sizes?
+
+---
+
+## Category 13: Order Amendment Bypass
+
+### CLOB-AMN-01: AmendOrder Bypasses maxLimitsPerTx DOS Protection
+**Severity:** High | **Source:** GTE Spot H-03
+
+`postLimitOrder` calls `incrementLimitsPlaced()` for DOS protection. `amend()` does NOT call it, even when amending to different price/side (which effectively creates a new book entry). Attacker can flood book with unlimited price level changes in single tx.
+
+**Checklist:**
+- [ ] Does `amendOrder` increment limit counter when price/side changes?
+- [ ] Are all operations that create new book entries subject to same DOS protection?
+
+### CLOB-AMN-02: Spam Expired/Cancelled Orders Wipe Legitimate Orders
+**Severity:** Medium | **Source:** GTE Spot M-04
+
+No minimum validity period for orders. User creates orders expiring next second at extreme prices. When book is full, these fill worst-limit slots. After expiry, legitimate orders at those limits were already displaced. Cost: only gas.
+
+**Checklist:**
+- [ ] Is there a minimum order validity period?
+- [ ] Can expired orders displace legitimate orders from capacity-limited book?
+
+---
+
+## Category 14: Bitwise Logic Errors
+
+### CLOB-BIT-01: Bitwise AND Used Instead of Logical Zero Check
+**Severity:** Medium | **Source:** GTE Spot M-01
+
+`if (a & b == 0)` used to detect zero-cost trades. But `1 & 2 == 0` is true even though neither value is zero. Should use `(a == 0 || b == 0)`.
+
+**Checklist:**
+- [ ] Are bitwise operations used for logical comparisons anywhere?
+- [ ] Replace `a & b == 0` with `(a == 0 || b == 0)` for zero checks
