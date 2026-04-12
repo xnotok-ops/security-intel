@@ -133,3 +133,5 @@ Need to audit a specific protocol type? Upload these files:
  
 web3-bug-classes.md - references/ - 10 DeFi bug classes with real paid examples (shuvonsec) 
 web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shuvonsec) 
+web3-bug-classes.md - references/ - 10 DeFi bug classes with real paid examples (shuvonsec) 
+web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shuvonsec) 
