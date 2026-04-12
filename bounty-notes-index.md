@@ -130,3 +130,6 @@ Need to audit a specific protocol type? Upload these files:
 | **TON/FunC** | ton-foundation-audit.md |
 | **Before submit (any)** | invalidation-library.md |
 | **Staking exploit ref** | subquery-sqt-exploit-apr2026.md |
+ 
+web3-bug-classes.md - references/ - 10 DeFi bug classes with real paid examples (shuvonsec) 
+web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shuvonsec) 
