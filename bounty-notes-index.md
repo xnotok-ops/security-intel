@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\Users\\USER\\bounty-notes\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\Users\\\\USER\\\\bounty-notes\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -149,4 +149,20 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
 \- \*\*Files:\*\* USDFC-AUDIT-NOTES.md
 
 \- \*\*Date:\*\* 2026-04-13
+
+
+
+\## xrpl-sherlock (Active — Waiting for contest publish)
+
+\- Platform: Sherlock
+
+\- Target: Ripple XRPL Feature Unlock ($550K)
+
+\- Scope: Batch, PermissionDelegation, MPT DEX, Confidential Transfers, Sponsored Fees, Reserves
+
+\- Files: xrpl-sherlock-rampup.md, xrpl-exploration-findings.md
+
+\- Status: Pre-research done, waiting for contest page to go live
+
+\- Key lead: Batch signer validation early return (same pattern as Feb 2026 critical)
 
