@@ -166,3 +166,6 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
 
 \- Key lead: Batch signer validation early return (same pattern as Feb 2026 critical)
 
+ 
+## sherlock-clear-macro/ 
+- FINDING-001-macro-not-in-digest.md - Medium: macro address not in EIP-712 digest (SUBMITTED, waiting judging) 
