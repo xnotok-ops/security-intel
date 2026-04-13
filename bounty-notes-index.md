@@ -169,3 +169,14 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
  
 ## sherlock-clear-macro/ 
 - FINDING-001-macro-not-in-digest.md - Medium: macro address not in EIP-712 digest (SUBMITTED, waiting judging) 
+# Append this to bounty-notes-index.md in security-intel repo
+
+## autofinance/ — PARKED
+- **Platform:** Remedy (r.xyz) | **Chain:** Ethereum | **Solidity 0.8.17**
+- **Repo:** github.com/Tokemak/v2-core-pub
+- **Rewards:** $1K-$250K | **AUM:** ~$130M
+- **Status:** PARKED — Low ROI after deep dive (2026-04-13)
+- **Files:**
+  - `STATUS.md` — Status summary, reason for park, leads killed
+  - `AUDIT-PHASE1-ANALYSIS.md` — Full structure analysis, architecture, attack leads, Phase 2 results
+- **Notes:** Extensively audited (Sherlock/Hats/Omniscia/Quantstamp/Certora). OOS list massive. 86 participants, 5 payouts. All 7 leads investigated and killed. Revisit only for strategy verification (Critical-only) or web app scope.
