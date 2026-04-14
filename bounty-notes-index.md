@@ -180,3 +180,4 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
   - `STATUS.md` — Status summary, reason for park, leads killed
   - `AUDIT-PHASE1-ANALYSIS.md` — Full structure analysis, architecture, attack leads, Phase 2 results
 - **Notes:** Extensively audited (Sherlock/Hats/Omniscia/Quantstamp/Certora). OOS list massive. 86 participants, 5 payouts. All 7 leads investigated and killed. Revisit only for strategy verification (Critical-only) or web app scope.
+xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 5 finding docs 
