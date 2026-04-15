@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\Users\\\\\\\\USER\\\\\\\\bounty-notes\\\\\\\\\\\\\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -191,7 +191,9 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * `sherlock-xrpl/xrpl-offercreate-deepread-apr15.md`  OfferCreate/applyHybrid deep read, 6 leads (all dead), architecture notes MPT-DEX + hybrid offers + invariant system
 
 
+
 ## sherlock-xrpl/ (COMPLETE)
+
 * \- xrpl-final-summary-apr15.md — FINAL: all sessions compiled, 2 Med submitted, \~90% coverage
 * \- xrpl-offercreate-deepread-apr15.md — OfferCreate applyHybrid 934 LOC deep read
 * \- xrpl-session-apr15.md — Static analysis session summary
@@ -205,6 +207,13 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * \- xrpl-sherlock-research-summary.md
 
 
-
-
+### tropykus/
+* \- \*\*Platform:\*\* Immunefi
+* \- \*\*Status:\*\* PARKED — 0 findings, all candidates dead
+* \- \*\*Date:\*\* April 15, 2026
+* \- \*\*Type:\*\* Smart Contract (Compound V2 fork, Solidity 0.5.16, Rootstock/RSK)
+* \- \*\*Rewards:\*\* Critical $20K-$100K | High $3K-$20K | Med $3K | Low $1K
+* \- \*\*TVL:\*\* \~$10.92M
+* \- \*\*Files:\*\* STATUS.md
+* \- \*\*Notes:\*\* Custom code (Hurricane model, subsidyFund) all deprecated + OOS. Active = vanilla Compound V2. 6 candidates evaluated, all failed gate check.
 
