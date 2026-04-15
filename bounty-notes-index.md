@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\Users\\\\USER\\\\bounty-notes\\\\\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\Users\\\\\\\\USER\\\\\\\\bounty-notes\\\\\\\\\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -166,21 +166,45 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
 
 \- Key lead: Batch signer validation early return (same pattern as Feb 2026 critical)
 
- 
-## sherlock-clear-macro/ 
-- FINDING-001-macro-not-in-digest.md - Medium: macro address not in EIP-712 digest (SUBMITTED, waiting judging) 
+
+
+## sherlock-clear-macro/
+
+* FINDING-001-macro-not-in-digest.md - Medium: macro address not in EIP-712 digest (SUBMITTED, waiting judging)
+
 # Append this to bounty-notes-index.md in security-intel repo
 
 ## autofinance/ — PARKED
-- **Platform:** Remedy (r.xyz) | **Chain:** Ethereum | **Solidity 0.8.17**
-- **Repo:** github.com/Tokemak/v2-core-pub
-- **Rewards:** $1K-$250K | **AUM:** ~$130M
-- **Status:** PARKED — Low ROI after deep dive (2026-04-13)
-- **Files:**
-  - `STATUS.md` — Status summary, reason for park, leads killed
-  - `AUDIT-PHASE1-ANALYSIS.md` — Full structure analysis, architecture, attack leads, Phase 2 results
-- **Notes:** Extensively audited (Sherlock/Hats/Omniscia/Quantstamp/Certora). OOS list massive. 86 participants, 5 payouts. All 7 leads investigated and killed. Revisit only for strategy verification (Critical-only) or web app scope.
-xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 5 finding docs 
-  - sherlock-xrpl/xrpl-session-apr15.md - Apr 15 session: all static leads exhausted 
 
-- `sherlock-xrpl/xrpl-offercreate-deepread-apr15.md` � OfferCreate/applyHybrid deep read, 6 leads (all dead), architecture notes MPT-DEX + hybrid offers + invariant system
+* **Platform:** Remedy (r.xyz) | **Chain:** Ethereum | **Solidity 0.8.17**
+* **Repo:** github.com/Tokemak/v2-core-pub
+* **Rewards:** $1K-$250K | **AUM:** \~$130M
+* **Status:** PARKED — Low ROI after deep dive (2026-04-13)
+* **Files:**
+
+  * `STATUS.md` — Status summary, reason for park, leads killed
+  * `AUDIT-PHASE1-ANALYSIS.md` — Full structure analysis, architecture, attack leads, Phase 2 results
+* **Notes:** Extensively audited (Sherlock/Hats/Omniscia/Quantstamp/Certora). OOS list massive. 86 participants, 5 payouts. All 7 leads investigated and killed. Revisit only for strategy verification (Critical-only) or web app scope.
+xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 5 finding docs
+
+  * sherlock-xrpl/xrpl-session-apr15.md - Apr 15 session: all static leads exhausted
+* `sherlock-xrpl/xrpl-offercreate-deepread-apr15.md`  OfferCreate/applyHybrid deep read, 6 leads (all dead), architecture notes MPT-DEX + hybrid offers + invariant system
+
+
+## sherlock-xrpl/ (COMPLETE)
+* \- xrpl-final-summary-apr15.md — FINAL: all sessions compiled, 2 Med submitted, \~90% coverage
+* \- xrpl-offercreate-deepread-apr15.md — OfferCreate applyHybrid 934 LOC deep read
+* \- xrpl-session-apr15.md — Static analysis session summary
+* 
+* \## xrpl-ledger/ (reference)
+* \- batch-fix-verification-guide.md
+* \- mpt-crypto-audit-findings.md
+* \- xrpl-diff-analysis.md
+* \- xrpl-exploration-findings.md
+* \- xrpl-sherlock-rampup.md
+* \- xrpl-sherlock-research-summary.md
+
+
+
+
+
