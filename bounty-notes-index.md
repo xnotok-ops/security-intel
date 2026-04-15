@@ -182,3 +182,5 @@ web3-grep-arsenal.md - references/ - 10 copy-paste grep blocks for SC audit (shu
 - **Notes:** Extensively audited (Sherlock/Hats/Omniscia/Quantstamp/Certora). OOS list massive. 86 participants, 5 payouts. All 7 leads investigated and killed. Revisit only for strategy verification (Critical-only) or web app scope.
 xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 5 finding docs 
   - sherlock-xrpl/xrpl-session-apr15.md - Apr 15 session: all static leads exhausted 
+
+- `sherlock-xrpl/xrpl-offercreate-deepread-apr15.md` — OfferCreate/applyHybrid deep read, 6 leads (all dead), architecture notes MPT-DEX + hybrid offers + invariant system
