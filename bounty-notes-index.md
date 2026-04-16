@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -207,7 +207,9 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * \- xrpl-sherlock-research-summary.md
 
 
+
 ### tropykus/
+
 * \- \*\*Platform:\*\* Immunefi
 * \- \*\*Status:\*\* PARKED — 0 findings, all candidates dead
 * \- \*\*Date:\*\* April 15, 2026
@@ -217,5 +219,14 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * \- \*\*Files:\*\* STATUS.md
 * \- \*\*Notes:\*\* Custom code (Hurricane model, subsidyFund) all deprecated + OOS. Active = vanilla Compound V2. 6 candidates evaluated, all failed gate check.
 
-  - sherlock-xrpl/xrpl-session-apr16.md - Apr 16: OfferCreate+CT static clean, HybridxBatch dynamic tests pass 
-  - sherlock-xrpl/HybridBatch_test.cpp - XRPL test skeleton for future dynamic investigations 
+  * sherlock-xrpl/xrpl-session-apr16.md - Apr 16: OfferCreate+CT static clean, HybridxBatch dynamic tests pass
+  * sherlock-xrpl/HybridBatch\_test.cpp - XRPL test skeleton for future dynamic investigations
+
+
+
+### sherlock-xrpl/ — XRPL Sherlock Contest (Apr 13-27, 2026, $550K)
+  * \- \*\*Status:\*\* 2 Medium submitted \& critique-passed, monitoring mode (static+dynamic exhausted)
+  * \- \*\*Final summary:\*\* `sherlock-xrpl/xrpl-final-summary-apr16.md` (supersedes apr15)
+  * \- \*\*Dynamic tests:\*\* `sherlock-xrpl/XRPLContest\_test-v7.cpp` (MaxAmount enforcement, 6 test cases)
+  * \- \*\*Submissions:\*\* Med #1 MPT DEX `lsfMPTCanTrade` bypass, Med #2 Batch×SponsoredFees `RequireSign` bypass
+
