@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -225,8 +225,39 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 
 
 ### sherlock-xrpl/ — XRPL Sherlock Contest (Apr 13-27, 2026, $550K)
-  * \- \*\*Status:\*\* 2 Medium submitted \& critique-passed, monitoring mode (static+dynamic exhausted)
-  * \- \*\*Final summary:\*\* `sherlock-xrpl/xrpl-final-summary-apr16.md` (supersedes apr15)
-  * \- \*\*Dynamic tests:\*\* `sherlock-xrpl/XRPLContest\_test-v7.cpp` (MaxAmount enforcement, 6 test cases)
-  * \- \*\*Submissions:\*\* Med #1 MPT DEX `lsfMPTCanTrade` bypass, Med #2 Batch×SponsoredFees `RequireSign` bypass
+
+* \- \*\*Status:\*\* 2 Medium submitted \& critique-passed, monitoring mode (static+dynamic exhausted)
+* \- \*\*Final summary:\*\* `sherlock-xrpl/xrpl-final-summary-apr16.md` (supersedes apr15)
+* \- \*\*Dynamic tests:\*\* `sherlock-xrpl/XRPLContest\\\_test-v7.cpp` (MaxAmount enforcement, 6 test cases)
+* \- \*\*Submissions:\*\* Med #1 MPT DEX `lsfMPTCanTrade` bypass, Med #2 Batch×SponsoredFees `RequireSign` bypass
+
+
+## polymarket-cantina/ (ACTIVE)
+* 
+* \- \*\*Status\*\*: Phase 1 Intel — started 2026-04-16
+* \- \*\*Platform\*\*: Cantina bug bounty (continuous, not time-boxed)
+* \- \*\*Chain\*\*: Polygon PoS (137)
+* \- \*\*Pool\*\*: $5M max Critical, $500K High, $50K Medium, $5K Low
+* \- \*\*Deposit\*\*: $5/submit (anti-spam, refundable on valid)
+* \- \*\*Competition\*\*: 157 findings in 3 days (crowded field)
+* \- \*\*Start date (program)\*\*: 2026-04-13
+* 
+* \### Files
+* \- `README.md` — program overview, reward pool, economics, competition snapshot
+* \- `scope.md` — 22 in-scope contracts tiered A/B/C/D + OOS landmines + severity examples
+* \- `attack-vectors.md` — P0-P5 priority with specific check items and $-anchors
+* \- `TODO.md` — Phase 1 checklist (setup → source → audits → arch → solodit → cantina platform → onchain)
+* \- `findings/` — finding drafts (empty initially)
+* \- `prior-audits/` — downloaded PDFs from ctf-exchange-v2/audits (Phase 1.2)
+* \- `repos/` — cloned GitHub repos: ctf-exchange-v2, ctf-exchange (V1), collateral, neg-risk
+* \- `notes/` — session logs + architecture maps
+* 
+* \### Key intel
+* \- Past exploit: Mar 25, 2025 UMA governance attack ($7M market) — \*\*OOS angle\*\*, not SC bug
+* \- MEV/front-running strictly prohibited (rules section)
+* \- Known issues: unfixed audits at github.com/Polymarket/ctf-exchange-v2/tree/main/audits — MUST READ
+* \- Dupe filter: Immunefi also runs Polymarket program — dupes OOS
+* 
+* \### Next action
+* \- User to clone repos + download audit PDFs → Phase 1.1-1.2
 
