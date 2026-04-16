@@ -217,3 +217,5 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * \- \*\*Files:\*\* STATUS.md
 * \- \*\*Notes:\*\* Custom code (Hurricane model, subsidyFund) all deprecated + OOS. Active = vanilla Compound V2. 6 candidates evaluated, all failed gate check.
 
+  - sherlock-xrpl/xrpl-session-apr16.md - Apr 16: OfferCreate+CT static clean, HybridxBatch dynamic tests pass 
+  - sherlock-xrpl/HybridBatch_test.cpp - XRPL test skeleton for future dynamic investigations 
