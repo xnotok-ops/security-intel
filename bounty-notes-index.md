@@ -6,7 +6,7 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 
 
-\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\Users\\\\\\\\USER\\\\\\\\bounty-notes\\\\\\\\\\\\\\\[path]`.
+\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 
 
@@ -213,13 +213,13 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 \- `batch-fix-verification-guide.md` — Batch patch verification
 
-\- `dynamic-tests/XRPLContest\\\\\\\_test\\\\\\\_v5.cpp` — Final 9-case test file
+\- `dynamic-tests/XRPLContest\\\\\\\\\\\\\\\_test\\\\\\\\\\\\\\\_v5.cpp` — Final 9-case test file
 
 \- `dynamic-tests/round2-final-results.log` — Full test run output, 0 failures
 
 \- `wsl-backup/`, `wsl-backup-20260417/` — XRPL test code backups from WSL
 
-\- `HybridBatch\\\\\\\_test.cpp` — Earlier test skeleton
+\- `HybridBatch\\\\\\\\\\\\\\\_test.cpp` — Earlier test skeleton
 
 \- `sherlock-report-sponsor-bypass.md`, `sherlock-xrpl-finding-checkcreate-cantrade.md` — Submission reports
 
@@ -342,6 +342,9 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 | synfutures/ | SC research | synfutures-research.md | Perp DEX (order book style) |
 
 | ton-foundation/ | SC research | ton-foundation-audit.md | TON/FunC patterns |
+:: Add entry: k2/ | Code4rena | SC (Rust/Soroban) | IN PROGRESS Day 1 | V12-FINGERPRINT, PRIOR-AUDITS-SUMMARY, next-session-kickoff | 40-day, 2-submit limit
+
+
 
 
 
