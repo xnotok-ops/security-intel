@@ -6,7 +6,7 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 
 
-\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\Users\\USER\\bounty-notes\\\[path]`.
+\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\Users\\\\USER\\\\bounty-notes\\\\\\\[path]`.
 
 
 
@@ -81,6 +81,20 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 | rhea-finance-near-apr2026.md | references/exploit-postmortems/ | Rhea Finance NEAR $7.6M fake-token oracle (Apr 16 2026) | Fresh pool oracle manipulation, asset registration bypass |
 
 | lootbot-xloot-redeem-apr2026.md | references/exploit-postmortems/ | LootBot xLoot staking redeem $9.6K (Apr 15 2026) | Array loop double-counting via late state update |
+
+
+
+\### Tools Tested (evaluation records)
+
+
+
+| File | Path | Description | Status |
+
+|-|-|-|-|
+
+| txanalyzer-test-plan.md | references/tools-tested/ | TxAnalyzer evaluation: 3 test cases (LootBot, HB Token, XBIT), KEEP/ARCHIVE decision criteria | Pending test (post-Apr 27) |
+
+
 
 
 
@@ -196,13 +210,13 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 \- `batch-fix-verification-guide.md` — Batch patch verification
 
-\- `dynamic-tests/XRPLContest\_test\_v5.cpp` — Final 9-case test file
+\- `dynamic-tests/XRPLContest\\\_test\\\_v5.cpp` — Final 9-case test file
 
 \- `dynamic-tests/round2-final-results.log` — Full test run output, 0 failures
 
 \- `wsl-backup/`, `wsl-backup-20260417/` — XRPL test code backups from WSL
 
-\- `HybridBatch\_test.cpp` — Earlier test skeleton
+\- `HybridBatch\\\_test.cpp` — Earlier test skeleton
 
 \- `sherlock-report-sponsor-bypass.md`, `sherlock-xrpl-finding-checkcreate-cantrade.md` — Submission reports
 
@@ -405,4 +419,5 @@ Need to audit a specific protocol type? Upload these files:
 | XRPL (C++/Rippled) | xrpl-sherlock/ (rampup + final-summary-apr16 + session-apr17) |
 
 | Before submit (any) | invalidation-library.md |
+| Attack TX RCA test plan | txanalyzer-test-plan.md, plus local tool at C:\\Users\\USER\\TxAnalyzer |
 
