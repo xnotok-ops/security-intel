@@ -2,7 +2,7 @@
 
 Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify which files to upload to Claude chat during audit sessions.
 
-**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
+**How to use:** Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 Last updated: April 12, 2026
 
@@ -228,11 +228,13 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 
 * \- \*\*Status:\*\* 2 Medium submitted \& critique-passed, monitoring mode (static+dynamic exhausted)
 * \- \*\*Final summary:\*\* `sherlock-xrpl/xrpl-final-summary-apr16.md` (supersedes apr15)
-* \- \*\*Dynamic tests:\*\* `sherlock-xrpl/XRPLContest\\\_test-v7.cpp` (MaxAmount enforcement, 6 test cases)
+* \- \*\*Dynamic tests:\*\* `sherlock-xrpl/XRPLContest\\\\\\\_test-v7.cpp` (MaxAmount enforcement, 6 test cases)
 * \- \*\*Submissions:\*\* Med #1 MPT DEX `lsfMPTCanTrade` bypass, Med #2 Batch×SponsoredFees `RequireSign` bypass
 
 
+
 ## polymarket-cantina/ (ACTIVE)
+
 * 
 * \- \*\*Status\*\*: Phase 1 Intel — started 2026-04-16
 * \- \*\*Platform\*\*: Cantina bug bounty (continuous, not time-boxed)
@@ -260,4 +262,19 @@ xrpl-ledger/ - Sherlock Apr 2026 ($550K), 5 features, C++/C, research summary + 
 * 
 * \### Next action
 * \- User to clone repos + download audit PDFs → Phase 1.1-1.2
+
+
+### polymarket-cantina/
+* 
+* Platform: Cantina (continuous bounty)
+* Status: CLOSED — 0 findings, cut losses after 7 files reviewed
+* Date: April 16, 2026
+* Type: Smart Contract (Solidity 0.8.15/0.8.30/0.8.34, Polygon PoS)
+* Rewards: Critical $5M | High $500K | Med $50K | Low $5K
+* Competition: 118+ findings in 5 days
+* Files: notes/polymarket-research-summary.md, poc/FeeModuleExploit.t.sol (not submitted)
+* Audits reviewed: ChainSecurity Exchange (2022), Cantina/Quantstamp CTFExchangeV2 fix-review (2026-03-25)
+* Contracts reviewed: FeeModule, CalculatorHelper, CollateralToken (pUSD), CollateralOnramp, CollateralOfframp, CtfCollateralAdapter, CTFExchange V1+V2, Hashing, Trading, NonceManager, Structs
+* Key insight: Operator-centric trust model (documented in audit) = any operator-param-abuse finding is OOS. V2 removed NonceManager entirely. pUSD ecosystem uses Solady modern patterns, heavily hardened. Callback reentrancy dead (all callers hardcode address(0)).
+* Lessons: Read audit reports BEFORE code deep-dive. Gate 3 (unprivileged trigger) is make-or-break for operator-centric protocols.
 
