@@ -6,7 +6,7 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 
 
-\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
+\*\*How to use:\*\* Tell Claude "upload \[filename]" → Claude will ask you to upload from `C:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\USER\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\bounty-notes\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[path]`.
 
 
 
@@ -125,6 +125,10 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 | tiny-auditor.md | claude-skills/ | v1.0 | Phase 0 quick gate: WORTH DEEP DIVE / SKIP / BORDERLINE |
 | pending-patterns.md | claude-skills/ | — | Pattern queue for next skill update batch (release target: mid-May 2026) |
 
+::   bounty-workflow v1.6 (Apr 18): + Pre-Deep-Dive Density Gate
+
+
+
 
 
 
@@ -213,13 +217,13 @@ Complete catalog of `bounty-notes` (PRIVATE repo). Use this index to identify wh
 
 \- `batch-fix-verification-guide.md` — Batch patch verification
 
-\- `dynamic-tests/XRPLContest\\\\\\\\\\\\\\\_test\\\\\\\\\\\\\\\_v5.cpp` — Final 9-case test file
+\- `dynamic-tests/XRPLContest\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_test\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_v5.cpp` — Final 9-case test file
 
 \- `dynamic-tests/round2-final-results.log` — Full test run output, 0 failures
 
 \- `wsl-backup/`, `wsl-backup-20260417/` — XRPL test code backups from WSL
 
-\- `HybridBatch\\\\\\\\\\\\\\\_test.cpp` — Earlier test skeleton
+\- `HybridBatch\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_test.cpp` — Earlier test skeleton
 
 \- `sherlock-report-sponsor-bypass.md`, `sherlock-xrpl-finding-checkcreate-cantrade.md` — Submission reports
 
