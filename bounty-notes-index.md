@@ -73,7 +73,7 @@ Currently being worked on. Upload relevant files when resuming session.
 
 | Folder | Platform | Type | Status | Key Files |
 |--------|----------|------|--------|-----------|
-| xrpl-sherlock/ | Sherlock | SC (C++) | ACTIVE — 2 Med submitted, deadline Apr 27 | `xrpl-session-apr17.md`, `dynamic-tests/` |
+| xrpl-sherlock/ | Sherlock | SC (C++) | ACTIVE — 2 Med submitted, deadline Apr 27 | `xrpl-session-apr19-coverage.md`, `dynamic-tests/` |
 
 See **xrpl-sherlock/** dedicated section below.
 
@@ -178,6 +178,8 @@ Previously explored, no active work. Check coverage map before revival.
 | `xrpl-session-apr15.md` | Static analysis session |
 | `xrpl-session-apr16.md` | OfferCreate+CT clean, HybridxBatch dynamic tests pass |
 | `xrpl-session-apr17.md` | Round 2 dynamic testing — 9 test cases, 0 findings |
+| `xrpl-session-apr19-coverage.md` | Session Apr 19 coverage: V4-A Batch×MPT diagnostic, V2b/V2d invalidated, 4 angles closed, Patterns J/K/L queued |
+| `tools/patch_v4a.py` | Python patch script to inject testBatchMPTCreateAuthorize into XRPLContest_test.cpp |
 | `xrpl-offercreate-deepread-apr15.md` | OfferCreate applyHybrid 934 LOC deep read |
 | `xrpl-diff-analysis.md` | Diff vs upstream rippled |
 | `mpt-crypto-audit-findings.md` | mpt-crypto ZK library review |
