@@ -63,7 +63,7 @@ Uploaded to Claude.ai Settings → Skills. Mirror of local `C:\Users\USER\.claud
 | ffuf-web-fuzzing/SKILL.md | latest | ffuf: dir/file, subdomain, parameter, authenticated fuzzing |
 | blockchain-forensics.md | v1.0 | On-chain investigation, exploit tracing, fund flow |
 | tiny-auditor.md | v1.0 | Phase 0 quick gate: WORTH DEEP DIVE / SKIP / BORDERLINE |
-| pending-patterns.md | — | Pattern queue for next skill batch (target: mid-May 2026, v3.3) |
+| pending-patterns.md | — | Pattern queue for next skill batch — 15 validated (O/P/Q added Apr 19 R2), target mid-May 2026 v3.3 |
 
 ---
 
@@ -179,6 +179,7 @@ Previously explored, no active work. Check coverage map before revival.
 | `xrpl-session-apr16.md` | OfferCreate+CT clean, HybridxBatch dynamic tests pass |
 | `xrpl-session-apr17.md` | Round 2 dynamic testing — 9 test cases, 0 findings |
 | `xrpl-session-apr19-coverage.md` | Session Apr 19 coverage: V4-A Batch×MPT diagnostic, V2b/V2d invalidated, 4 angles closed, Patterns J/K/L queued |
+| `session-apr19-round2.md` | Session Apr 19 Round 2: 5 angles killed (C-8, CT×PermDelegate, XLS-94 Dynamic MPT, Hybrid×Open cross, Stale Domain), Patterns O/P/Q queued |
 | `tools/patch_v4a.py` | Python patch script to inject testBatchMPTCreateAuthorize into XRPLContest_test.cpp |
 | `xrpl-offercreate-deepread-apr15.md` | OfferCreate applyHybrid 934 LOC deep read |
 | `xrpl-diff-analysis.md` | Diff vs upstream rippled |
