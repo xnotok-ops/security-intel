@@ -381,3 +381,7 @@ Audit a specific protocol type? Upload these files:
 - **Path:** `C:\Users\USER\bounty-notes\kast\`
 - **Dup-check cmd:** `findstr /i /c:"phrase" bounty-notes\kast\audits\*.txt`
 - **Full findstr against all 5 audits:** ~6,251 lines total (millisecond scan)
+
+## KAST Session Archives (Apr 20 2026)
+- `kast/sessions/session-1-proto835/session-1-archive.md` — H1 PROTO-835 kill rationale, Floor-Bounded Rounding Pattern validation, deployment intel (SwapGlobal PDA, ExtGlobalV2 addresses, variant map)
+- `kast/sessions/session-2-migrate/bootstrap.md` — T1 P2 migrate.rs bootstrap prompt for fresh chat
