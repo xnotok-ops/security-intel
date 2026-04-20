@@ -7,7 +7,10 @@
 ### kamino/findings/
 
 - `is_farm_frozen-fix-integrity.md` (Apr 20, 2026) — V1 Medium draft, ARCHIVED. PR#94 fix integrity gap. Config-dormant per mainnet verification (Session 3).
-- `is_farm_frozen-fix-integrity-HIGH.md` (Apr 20, 2026) — V2 High draft with mainnet evidence placeholder, ARCHIVED.# Bounty Notes Index
+- `is_farm_frozen-fix-integrity-HIGH.md` (Apr 20, 2026) — V2 High draft with mainnet evidence placeholder, ARCHIVED.
+- `session-4-summary.md` (Apr 20, 2026) — Session 4 closure. P2 transfer_ownership + P3 klend<->kfarms CPI boundary both CLOSED. 19 hypotheses killed total (14 P2 + 5 P3). 0 candidates. SC skill never loaded across P1+P2+P3. ~2.2 day Tier 1 used. Next: P5 add_rewards.
+
+# Bounty Notes Index
 
 Complete catalog of `bounty-notes` (PRIVATE repo at `C:\Users\USER\bounty-notes`). Use this index to identify which files to upload to Claude chat during audit sessions.
 
@@ -271,9 +274,9 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** Phase 1.0 complete for kfarms (Apr 20, 2026) — density gate PROCEED, Phase 2 ready
+- **Status:** Phase 2 Session 4 CLOSED (Apr 20, 2026) — P1 PARKED (Gate 6 fail), P2+P3 CLOSED (19 hypotheses killed), 0 candidates. ~2.2 day Tier 1 used, ~2.8 day remaining. Next: P5 add_rewards (unreviewed surface).
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
-- **Soft cap:** 10 hari total (Day 2 of 10), Tier 1 kfarms 5 hari hard cap
+- **Soft cap:** 10 hari total (Session 4 of ongoing), Tier 1 kfarms ~2.8 day remaining of 5 day cap
 - **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
 - **Realistic target:** Medium 10K USD flat, no stake = 0 risk
 - **Parallel pipeline:** xrpl-sherlock still ACTIVE (deadline Apr 27) — Kamino primary post-XRPL
@@ -307,11 +310,11 @@ Audit a specific protocol type? Upload these files:
 
 ### Phase 2 Priority Queue — kfarms (Tier 1)
 
-1. **`is_farm_frozen` fix integrity audit** — strong lead, verify exhaustively via broad grep + all stake/deposit entry points
-2. `handler_transfer_ownership.rs` — post-audit feature, complex state migration, 8 distinct validation errors
-3. klend↔kfarms CPI boundary — `set_stake_delegated` semantics, RonnyX exploit context (klend_rx line 579) related
-4. `reward_user_once` + `expected_reward_issued_unclaimed` race protection semantics
-5. `add_rewards` permissionless abuse — confirmed permissionless in caller-constraint matrix (no `has_one = farm_admin`)
+1. ~~`is_farm_frozen` fix integrity audit~~ — **PARKED (Session 3)** — Gate 6 fail: 0/476 mainnet farms have warmup>0 (config-dormant)
+2. ~~`handler_transfer_ownership.rs`~~ — **CLOSED (Session 4)** — 14 hypotheses killed, fix-integrity verified, precision chain dup to Offside 4.1 + OtterSec M01
+3. ~~klend↔kfarms CPI boundary~~ — **CLOSED (Session 4)** — 5 hypotheses killed, RonnyX klend_rx line 579 fix verified via 3-pin chain (delegatee==obligation + PDA seed + init auth)
+4. `reward_user_once` + `expected_reward_issued_unclaimed` race protection semantics — **THIN** (Session 4 H18 showed delegate_authority-gated, not permissionless — CAS DoS angle only)
+5. **`add_rewards` permissionless abuse** — ⭐ NEXT TARGET — unreviewed by Offside/OtterSec, novel surface, highest remaining expected value
 
 ### Cross-Component Signal (worth noting)
 
