@@ -259,3 +259,26 @@ Audit a specific protocol type? Upload these files:
 | **Oracle manipulation exploit ref** | `rhea-finance-near-apr2026.md` |
 | **Before submit (any)** | `invalidation-library.md` |
 | **Attack TX RCA test plan** | `txanalyzer-test-plan.md` + local tool at `C:\Users\USER\TxAnalyzer` |
+
+## Kamino Immunefi
+
+- **Status:** Phase 0 Complete (Apr 20, 2026) — scope mapped, 40 PDFs sorted and converted
+- **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
+- **Master map:** bounty-notes/kamino/kamino-research-mapping.md (v2, 40 PDFs accurate)
+- **Audit coverage:** 40 reports total
+  - klend: 20 audits (incl 6 Certora FV versions 1.13.0-1.17.0)
+  - kvault: 9 audits (incl Certora FV + vault_rewards dedicated)
+  - limo: 4 audits (incl Certora FV)
+  - scope: 3 audits (no FV)
+  - kliquidity: 2 audits (incl Certora FV)
+  - farms: 2 audits (no FV)
+- **Priority queue:**
+  - Tier 1 P1 = farms (2 audits only, no FV) FRESH GROUND
+  - Tier 1 P2 = klend post-1.17.0 release audit gap
+  - Tier 1 P3 = kvault vault_rewards edge cases
+  - Tier 1 P4 = Leverage product verify scope
+  - Tier 1 P5 = Cross-module integration
+- **Soft cap:** 10 hari total, Tier 1 5 hari max
+- **Dup-check command:** grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt
+- **Realistic target:** Medium 10K USD flat, no stake = 0 risk
+- **Lesson:** Verify raw data via clone/find SEBELUM build mapping
