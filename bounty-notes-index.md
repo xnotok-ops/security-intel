@@ -1,4 +1,13 @@
-# Bounty Notes Index
+### kamino/sessions/
+
+- `session-3-summary.md` (Apr 20, 2026) — kfarms P1 is_farm_frozen PARKED. Deployment-state gate fail (0/476 mainnet farms have warmup>0). Skills v2.1/v1.8 deployed. Source for Config-Dormant Pattern.
+- `session-4-P2-handoff.md` (Apr 20, 2026) — ready-to-paste handoff block for Session 4 P2 transfer_ownership kickoff.
+- `session-3-README.md` (Apr 20, 2026) — install/commit instructions for Session 3 archive bundle.
+
+### kamino/findings/
+
+- `is_farm_frozen-fix-integrity.md` (Apr 20, 2026) — V1 Medium draft, ARCHIVED. PR#94 fix integrity gap. Config-dormant per mainnet verification (Session 3).
+- `is_farm_frozen-fix-integrity-HIGH.md` (Apr 20, 2026) — V2 High draft with mainnet evidence placeholder, ARCHIVED.# Bounty Notes Index
 
 Complete catalog of `bounty-notes` (PRIVATE repo at `C:\Users\USER\bounty-notes`). Use this index to identify which files to upload to Claude chat during audit sessions.
 
