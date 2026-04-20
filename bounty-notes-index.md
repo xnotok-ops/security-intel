@@ -377,7 +377,7 @@ Audit a specific protocol type? Upload these files:
   - Earners Lose Pending Yield on removal
   - ext_mint CloseMintAuthority + PermanentDelegate
 - **Caller constraint:** INCLUSIVE with privileged-caveat (admin/gov bugs default OOS unless intended-permissionless)
-- **Master map:** bounty-notes/kast/mappings/kast-research-mapping.md (PENDING — next session)
+- **Master map:** bounty-notes/kast/mappings/kast-research-mapping.md ✅ (Tier 1 P1 = PROTO-835 Feb 2026 post-audit fix, 5 files not audit-covered)
 - **Path:** `C:\Users\USER\bounty-notes\kast\`
 - **Dup-check cmd:** `findstr /i /c:"phrase" bounty-notes\kast\audits\*.txt`
 - **Full findstr against all 5 audits:** ~6,251 lines total (millisecond scan)
