@@ -4,7 +4,7 @@ Complete catalog of `bounty-notes` (PRIVATE repo at `C:\Users\USER\bounty-notes`
 
 **How to use:** Tell Claude "upload [filename]" → Claude will ask you to upload from `C:\Users\USER\bounty-notes\[path]`.
 
-**Last updated:** April 19, 2026
+**Last updated:** April 20, 2026
 
 ---
 
@@ -262,23 +262,56 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** Phase 0 Complete (Apr 20, 2026) — scope mapped, 40 PDFs sorted and converted
+- **Status:** Phase 1.0 complete for kfarms (Apr 20, 2026) — density gate PROCEED, Phase 2 ready
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
-- **Master map:** bounty-notes/kamino/kamino-research-mapping.md (v2, 40 PDFs accurate)
-- **Audit coverage:** 40 reports total
-  - klend: 20 audits (incl 6 Certora FV versions 1.13.0-1.17.0)
-  - kvault: 9 audits (incl Certora FV + vault_rewards dedicated)
-  - limo: 4 audits (incl Certora FV)
-  - scope: 3 audits (no FV)
-  - kliquidity: 2 audits (incl Certora FV)
-  - farms: 2 audits (no FV)
-- **Priority queue:**
-  - Tier 1 P1 = farms (2 audits only, no FV) FRESH GROUND
-  - Tier 1 P2 = klend post-1.17.0 release audit gap
-  - Tier 1 P3 = kvault vault_rewards edge cases
-  - Tier 1 P4 = Leverage product verify scope
-  - Tier 1 P5 = Cross-module integration
-- **Soft cap:** 10 hari total, Tier 1 5 hari max
-- **Dup-check command:** grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt
+- **Soft cap:** 10 hari total (Day 2 of 10), Tier 1 kfarms 5 hari hard cap
+- **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
 - **Realistic target:** Medium 10K USD flat, no stake = 0 risk
-- **Lesson:** Verify raw data via clone/find SEBELUM build mapping
+- **Parallel pipeline:** xrpl-sherlock still ACTIVE (deadline Apr 27) — Kamino primary post-XRPL
+
+### Mapping Files
+
+| File | Scope | Phase |
+|---|---|---|
+| `kamino/kamino-research-mapping.md` | Parent: 40 audits, 6 components, Tier queue | Phase 0 (Session 0) |
+| `kamino/mappings/mapping-kfarms.md` | Sub: kfarms only, 26 ix classified, P1-P9 queue, dead-zone blocklist | Phase 1.0 (Session 2) |
+| `kamino/kfarms-phase1-intel/` | Raw extraction outputs: A1 findings spine, A2 self-rejects, A3 cross-refs | Session 2 scratchpad |
+
+### Audit Coverage (40 reports total)
+
+- klend: 20 audits (incl 6 Certora FV versions 1.13.0-1.17.0) — Tier 3 brick wall
+- kvault: 9 audits (incl Certora FV + vault_rewards dedicated) — Tier 2
+- limo: 4 audits (incl Certora FV) — Tier 3
+- scope: 3 audits (no FV) — Tier 2
+- kliquidity: 2 audits (incl Certora FV) — Tier 3 hardened
+- **farms: 2 audits (no FV) — Tier 1 P1, density 0.96 H/M per kLOC, PROCEED**
+
+### kfarms Phase 1.0 Highlights (Session 2, Apr 20 2026)
+
+- **Density verdict:** PROCEED — 5 H/M findings over 5.2 kLOC = 0.96 per kLOC, not saturated (below 2 threshold)
+- **Self-reject cluster:** SKIPPED — 5 entries total, below 10-threshold per skill v1.7 rule
+- **Dead-zone blocklist LOCKED:** 11 functions from Offside Labs (5 H/M + 2 Low) + Ottersec (2 H + 1 M + 1 L) — auto-kill Gate 2
+- **Caller-constraint matrix:** 26 ix classified — 6 public, 10 farm_admin, 3 global_admin, 1 delegate, 6 user-owned, 1 permissionless-conditional (harvest)
+- **Events inventory:** ZERO (no `#[event]`, no `emit!`) — kfarms relies on account-state polling, not event stream
+- **Post-audit coverage gaps:** `transfer_ownership` (186 LoC, 8 validations), `reward_user_once`, `update_second_delegated_authority`, Token-2022 extension validation in `utils/constraints.rs`, `is_farm_frozen` fix (PR#94)
+- **STRONG LEAD 🚨:** `is_farm_frozen` flag set @ `farm_operations.rs:1011` but **ZERO check sites** found via grep — Offside #4.4 fix integrity suspect. If confirmed incomplete → original pending-stake-stuck DoS returns. **P1 target Phase 2.**
+
+### Phase 2 Priority Queue — kfarms (Tier 1)
+
+1. **`is_farm_frozen` fix integrity audit** — strong lead, verify exhaustively via broad grep + all stake/deposit entry points
+2. `handler_transfer_ownership.rs` — post-audit feature, complex state migration, 8 distinct validation errors
+3. klend↔kfarms CPI boundary — `set_stake_delegated` semantics, RonnyX exploit context (klend_rx line 579) related
+4. `reward_user_once` + `expected_reward_issued_unclaimed` race protection semantics
+5. `add_rewards` permissionless abuse — confirmed permissionless in caller-constraint matrix (no `has_one = farm_admin`)
+
+### Cross-Component Signal (worth noting)
+
+- klend↔kfarms CPI surface referenced in: `klend/kamino_lend_rx.txt:579` (RonnyX farm rewards drain via uncorrelated obligations), `klend/kamino_lend_ottersec.txt:671` (refresh farm type mismatch, fixed PR#115). Residual kfarms-side angles possible.
+
+### Lessons (Phase 0 + Phase 1.0)
+
+- **Phase 0 (MFD):** Verify raw audit count via `git clone` + `find` SEBELUM build mapping (21 assumed vs 40 actual caught)
+- **Phase 1.0 (density gate):** Ottersec uses ToC-style severity tables — inline `Severity:` grep alone misses findings, cross-check with `Status: Resolved` + `OS-FRM-ADV-XX` ID table
+- **Phase 1.0 (lead detection):** Sparse grep results (field def + set site + default init only, zero check sites) = empirical strong-lead signal for defensive flags
+- **Phase 1.0 (caller-constraint):** Always grep `has_one =` per handler cross-referenced against ix semantic intent — catches permissionless-by-accident (add_rewards case)
+- **Phase 1.0 (events absence):** Zero-event protocols change Phase 2 mental model — all state transitions inferred from account-data deltas, not event stream. Increases silent-state-drift bug risk.
