@@ -329,3 +329,31 @@ Audit a specific protocol type? Upload these files:
 - **Phase 1.0 (lead detection):** Sparse grep results (field def + set site + default init only, zero check sites) = empirical strong-lead signal for defensive flags
 - **Phase 1.0 (caller-constraint):** Always grep `has_one =` per handler cross-referenced against ix semantic intent — catches permissionless-by-accident (add_rewards case)
 - **Phase 1.0 (events absence):** Zero-event protocols change Phase 2 mental model — all state transitions inferred from account-data deltas, not event stream. Increases silent-state-drift bug risk.
+
+---
+
+## Web Patterns
+
+- **async-lifecycle-race** (experimental, Apr 2026)
+  — [`web-patterns/recon-checklist-experimental.md`](./web-patterns/recon-checklist-experimental.md)
+  — Status: unvalidated, 1 pattern queued
+
+- **second-order-sqli-worker-sink** (HIGH value)
+  — [`web-patterns/second-order-sqli-worker-sink.md`](./web-patterns/second-order-sqli-worker-sink.md)
+  — Canonical: CVE-2026-40871 Mailcow
+  — Universal pattern (Python/PHP/Node)
+
+## DeFi Patterns
+
+- **layerzero-dvn-audit** (HIGH value)
+  — [`defi-patterns/layerzero-dvn-audit.md`](./defi-patterns/layerzero-dvn-audit.md)
+  — Canonical: Kelp DAO $292M (Apr 2026)
+  — Includes governance-operational gap angle
+
+## Smart Contract Patterns
+
+- **cpp-blockchain-node-audit** (HIGHEST value, XRPL-urgent)
+  — [`sc-patterns/cpp-blockchain-node-audit.md`](./sc-patterns/cpp-blockchain-node-audit.md)
+  — Canonical: Pharos BlockChain audit by ExVul (Dec 2025, 101 findings)
+  — 8 category pattern library + XRPL hypothesis mapping
+  — PDF archive: bounty-notes/references/chain-audits/pharos-exvulsec-2025-12.pdf
