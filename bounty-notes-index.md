@@ -357,3 +357,27 @@ Audit a specific protocol type? Upload these files:
   — Canonical: Pharos BlockChain audit by ExVul (Dec 2025, 101 findings)
   — 8 category pattern library + XRPL hypothesis mapping
   — PDF archive: bounty-notes/references/chain-audits/pharos-exvulsec-2025-12.pdf
+
+## KAST (Immunefi)
+
+- **Status:** Phase 0 Complete (20 April 2026) — data collection done, mapping pending
+- **Bounty:** $50K Critical max / $21K floor / $10-20K High / KYC required / Immunefi-triaged / Primacy of Rules
+- **Chain:** Solana/Anchor (Rust, Anchor 0.31.1, Solana 2.1.0)
+- **Assets (both m_ext forks):**
+  - USDK  = `extaykYu5AQcDm3qZAbiDN3yp6skqn6Nssj7veUUGZw`
+  - USDKY = `extMahs9bUFMYcviKCvnSRaXgs5PcqmMzcnHRtTqE85`
+- **Codebase:** m0-foundation/solana-m-extensions (~4,123 SLoC, 2 programs: m_ext 3,175 + ext_swap 948)
+- **Feature flags:** no-yield / scaled-ui / crank / wm — only ONE compiled per deploy (detect via anchor idl fetch)
+- **Audits:** 5 reports across 3 firms (Adevar v1+v2, Halborn v1+v2, OtterSec v1) — Jun 2025 to Sep 2025
+- **Post-audit gap:** ~7 months (last audit Sep 19, 2025 → bounty launch Apr 20, 2026)
+- **Known issues (auto-kill zone):** 5 acknowledged
+  - Unsupported Mint Extensions
+  - trunc/floor off-by-one (multiplier × INDEX_SCALE_F64)
+  - Retroactive Fee Application (crank variant)
+  - Earners Lose Pending Yield on removal
+  - ext_mint CloseMintAuthority + PermanentDelegate
+- **Caller constraint:** INCLUSIVE with privileged-caveat (admin/gov bugs default OOS unless intended-permissionless)
+- **Master map:** bounty-notes/kast/mappings/kast-research-mapping.md (PENDING — next session)
+- **Path:** `C:\Users\USER\bounty-notes\kast\`
+- **Dup-check cmd:** `findstr /i /c:"phrase" bounty-notes\kast\audits\*.txt`
+- **Full findstr against all 5 audits:** ~6,251 lines total (millisecond scan)
