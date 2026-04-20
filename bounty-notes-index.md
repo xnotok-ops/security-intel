@@ -8,7 +8,7 @@
 
 - `is_farm_frozen-fix-integrity.md` (Apr 20, 2026) — V1 Medium draft, ARCHIVED. PR#94 fix integrity gap. Config-dormant per mainnet verification (Session 3).
 - `is_farm_frozen-fix-integrity-HIGH.md` (Apr 20, 2026) — V2 High draft with mainnet evidence placeholder, ARCHIVED.
-- `session-4-summary.md` (Apr 20, 2026) — Session 4 closure. P2 transfer_ownership + P3 klend<->kfarms CPI boundary both CLOSED. 19 hypotheses killed total (14 P2 + 5 P3). 0 candidates. SC skill never loaded across P1+P2+P3. ~2.2 day Tier 1 used. Next: P5 add_rewards.
+- `session-4-summary.md` (Apr 20, 2026) — Session 4 FULL CLOSURE. P2+P3+P4+P5 all CLOSED. 30 hypotheses tested, 0 candidates. kfarms Tier 1 EXHAUSTED. SC skill never loaded. Pattern logged: Kamino overflow-handling asymmetry (rewards_issued_unclaimed via checked_add vs raw += across 3 call sites).
 
 # Bounty Notes Index
 
@@ -274,7 +274,7 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** Phase 2 Session 4 CLOSED (Apr 20, 2026) — P1 PARKED (Gate 6 fail), P2+P3 CLOSED (19 hypotheses killed), 0 candidates. ~2.2 day Tier 1 used, ~2.8 day remaining. Next: P5 add_rewards (unreviewed surface).
+- **Status:** kfarms Tier 1 EXHAUSTED (Apr 20, 2026) — P1 PARKED, P2+P3+P4+P5 CLOSED. 30 hypotheses tested, 0 candidates. SC skill NEVER loaded. ~3 day used of 5 day cap. Next: Tier 2 OR pivot program.
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
 - **Soft cap:** 10 hari total (Session 4 of ongoing), Tier 1 kfarms ~2.8 day remaining of 5 day cap
 - **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
@@ -313,8 +313,10 @@ Audit a specific protocol type? Upload these files:
 1. ~~`is_farm_frozen` fix integrity audit~~ — **PARKED (Session 3)** — Gate 6 fail: 0/476 mainnet farms have warmup>0 (config-dormant)
 2. ~~`handler_transfer_ownership.rs`~~ — **CLOSED (Session 4)** — 14 hypotheses killed, fix-integrity verified, precision chain dup to Offside 4.1 + OtterSec M01
 3. ~~klend↔kfarms CPI boundary~~ — **CLOSED (Session 4)** — 5 hypotheses killed, RonnyX klend_rx line 579 fix verified via 3-pin chain (delegatee==obligation + PDA seed + init auth)
-4. `reward_user_once` + `expected_reward_issued_unclaimed` race protection semantics — **THIN** (Session 4 H18 showed delegate_authority-gated, not permissionless — CAS DoS angle only)
-5. **`add_rewards` permissionless abuse** — ⭐ NEXT TARGET — unreviewed by Offside/OtterSec, novel surface, highest remaining expected value
+4. ~~`reward_user_once` + `expected_reward_issued_unclaimed` race~~ — **CLOSED (Session 4)** — 5 hypotheses killed, overflow-asymmetry pattern observed (trust-model sub-threshold)
+5. ~~`add_rewards` permissionless abuse~~ — **CLOSED (Session 4)** — 5 hypotheses killed, refresh_farm strictly dominates as attack vector
+
+**kfarms Tier 1 EXHAUSTED — all 5 priority targets processed. 30 hypotheses tested. 0 submission candidates. SC skill never loaded.**
 
 ### Cross-Component Signal (worth noting)
 
