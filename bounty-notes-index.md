@@ -445,3 +445,38 @@ Added to existing exhausted list:
 - `sherlock-xrpl/xrpl-session-apr22.md` — Day 2 loan transactor + BookStep revival, full clean kill, 4 new patterns (T3-T6) queued for v3.3
 - `sherlock-xrpl/pharos-sweep-out/day3-coldstart-prompt.md` — Day 3 dynamic testing Round 2 kickoff template
 
+
+## Apr 23, 2026 — XRPL Sherlock Day 3 COMPLETE
+
+### Session overview
+- Deep-dives: 6, invariant sites examined: 21, new findings: **0**
+- Deadline: Apr 27 (4 days remaining)
+- Pipeline: 2 Medium submitted (MPT DEX lsfMPTCanTrade, Batch×SponsoredFees RequireSign), Day 4-5 = report polish
+
+### Kills (Day 3)
+- **V2b/V2d** (PermDelegation persistence through disable-master) — Gate 2 KILL, by-design via Ripple's own test Delegate_test.cpp L1597 + zero mentions of `asfDisableMaster` in DelegateUtils.cpp
+- **ASSERT path** (5 deep-dives, 18 asserts): PaymentSandbox L83/413/424, STTx L302/585, SponsorshipTransfer L428/457/461/505, OfferCreate L218/474/684/705/708/738, MPTokenIssuanceSet L391/409/419 — all KILL
+- **UNREACHABLE triage** (3 sites): MPTokenHelpers L189 (authorizeMPToken) + L495 (enforceMPTokenAuthorization), View.cpp L65 (isVaultPseudoAccountFrozen) — all KILL
+
+### Files
+- Session log: `sherlock-xrpl/xrpl-session-apr23.md`
+- Test file baseline: `~/xrpl-contest/src/test/contest/XRPLContest_test.cpp` (904 lines, Apr 19 last run, 12 test cases clean)
+
+### Pattern queued for bounty-lessons v2.x (mid-May)
+- **"XRPL C++ defensive-invariant paradigm"** — XRPL_ASSERT + UNREACHABLE + LCOV_EXCL behind preflight/preclaim guards. Triage method: grep caller preflight for same condition.
+
+### ⚠️ Contradiction flag (requires Day 4 resolution)
+Day 2 entry states: "UNREACHABLE is instrumentation-only in XRPL (stripped NDEBUG)."
+Day 3 Gate 0 re-read of `cmake/XrplCompiler.cmake` L241 as stripping `-DNDEBUG` FROM flags (keeping asserts LIVE).
+Both interpretations lead to same kill verdicts for Day 3 sites (preflight-guarded regardless), but thesis differs.
+**Action Day 4:** verify via actual binary — run `strings xrpld | grep "PaymentSandbox::creditMPT"` on built binary. Presence = asserts compiled in. Absence = compiled out per NDEBUG stripping (Day 2 interpretation).
+
+### Active exhausted-surfaces list update
+Added Day 3:
+- PaymentSandbox::DeferredCredits MPT assertions (internal helper, no tx caller)
+- STTx::checkBatchSign / getBatchTransactionIDs (dispatcher-gated)
+- SponsorshipTransfer getAccountID `!!` asserts (4, typed-extractor tautological)
+- OfferCreate applyGuts all 6 asserts (preflight + early-return guarded)
+- MPTokenIssuanceSet sle type asserts (keylet-typed read invariant)
+- MPTokenHelpers UNREACHABLE L189/495 (preclaim-gated conds)
+- View.cpp isVaultPseudoAccountFrozen UNREACHABLE L65 (AccountDelete ledger invariant)
