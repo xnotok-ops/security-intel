@@ -492,3 +492,14 @@ Re-reading Day 2 insight more carefully: "UNREACHABLE instrumentation-only (stri
 **Actual verdict on Day 3 sites:** still all KILL, but for the REAL reason: UNREACHABLE no-op → fallthrough returns `tefINTERNAL`/`false`/`tecINTERNAL` gracefully. Not "abort blocked by preflight" as Day 3 framed it.
 
 **Lesson:** always re-read prior session's primitive-level insights before starting new primitive analysis. Day 2 was explicit about this exact topic; I should've consulted it Day 3 Gate 0.
+
+## Kamino prior-audits (sec3)
+
+Location: `bounty-notes/kamino/prior-audits/sec3/`
+
+- sec3_kamino_lend.pdf — Feb 2025, Kamino Lending Program (patterns relevan untuk kfarms)
+- sec3_kamino_vault.pdf — Feb 2025, Kamino Lending Vault
+- sec3_kamino_scope.pdf — Dec 2024, Kamino Scope oracle aggregator
+- sec3_kamino_report.pdf — Sep 2022, Kamino yvaults (baseline historis)
+
+Use case: Gate 5 invalidation cross-check saat T1P2 transfer_ownership session.
