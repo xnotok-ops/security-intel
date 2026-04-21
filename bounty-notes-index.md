@@ -440,3 +440,8 @@ Added to existing exhausted list:
 2. `UNREACHABLE` is instrumentation-only in XRPL (stripped NDEBUG). Always resolve macro definition before claiming abort-based DoS.
 3. `enforce = view.rules().enabled(featureX)` pattern common in invariants — breaks indicate feature gating rather than runtime abort.
 4. Pharos Pattern 2 (error handling anti-pattern) match in XRPL manifests as "TBD" comments rather than wrong abort — search for incomplete invariant coverage, not wrong termination.
+## Apr 22, 2026 — XRPL Sherlock Day 2
+
+- `sherlock-xrpl/xrpl-session-apr22.md` — Day 2 loan transactor + BookStep revival, full clean kill, 4 new patterns (T3-T6) queued for v3.3
+- `sherlock-xrpl/pharos-sweep-out/day3-coldstart-prompt.md` — Day 3 dynamic testing Round 2 kickoff template
+
