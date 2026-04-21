@@ -138,6 +138,8 @@ Previously explored, no active work. Check coverage map before revival.
 | File | Purpose | Use when |
 |------|---------|----------|
 | **`k2-coverage-map.md`** | **Day 1-14 comprehensive catalog (60+ killed hypotheses, 15+ modules, untouched priorities, revival rules)** | **Before reviving K2 — ALWAYS re-read first** |
+| `k2-coverage-status.md` | Concise coverage snapshot — module matrix, killed categories C1-C7, untouched P1/P2 priorities | Quick status check before revival session |
+| `k2-session-starter.md` | Reusable revival session starter template with protocol checklist | Fresh chat session start for K2 revival |
 | `V12-FINGERPRINT.md` | 106 unique V12 findings cross-ref | Pre-deep-dive density gate (Memory #26) |
 | `K2-V12-Critical-output.md` | Raw Critical findings | Rule (i) dual-file crosscheck |
 | `K2-V12-High-output.md` | Raw High findings | Rule (i) dual-file crosscheck |
