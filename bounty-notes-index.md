@@ -385,3 +385,58 @@ Audit a specific protocol type? Upload these files:
 ## KAST Session Archives (Apr 20 2026)
 - `kast/sessions/session-1-proto835/session-1-archive.md` — H1 PROTO-835 kill rationale, Floor-Bounded Rounding Pattern validation, deployment intel (SwapGlobal PDA, ExtGlobalV2 addresses, variant map)
 - `kast/sessions/session-2-migrate/bootstrap.md` — T1 P2 migrate.rs bootstrap prompt for fresh chat
+
+---
+
+# Bounty Notes Index Update — Apr 21, 2026
+
+> Paste/merge section below into `xnotok-ops/security-intel/bounty-notes-index.md`
+> under the `sherlock-xrpl/` section.
+
+---
+
+## sherlock-xrpl/ — Updates Apr 21, 2026
+
+### New files
+
+- `sherlock-xrpl/xrpl-session-apr21.md` — Day 1 Pharos C++ pattern sweep
+  - 6 grep categories swept (assert, abort, visit, sigverify, ratelimit, bounds)
+  - Macro resolution: `UNREACHABLE = assert((message) && false)` → no-op in NDEBUG
+  - 1 GREEN candidate: ValidVault TBD gap on `ttLOAN_SET/MANAGE/PAY`
+  - 2 YELLOW preserved: BookStep `remaining<0` pair (1059/1221)
+  - All other categories RED
+
+- `sherlock-xrpl/pharos-sweep-out/P2-tbd-vault-invariant.md` — Priority #1 mini-mapping
+  - Status: CONDITIONAL (gap confirmed, weaponization pending Day 2)
+  - Gate 5 dup-check: clean vs #1 (MPT DEX `lsfMPTCanTrade`), #2 (Batch×Sponsor `RequireSign`)
+  - Gate 6: `featureLendingProtocol` in contest scope per README L1041-1042
+
+- `sherlock-xrpl/pharos-sweep-out/cat*.txt` — grep artifacts (retained for reference)
+
+### Key pending-patterns queue additions (not yet validated 3x)
+
+- **Pattern T1:** "TBD comment in invariant switch returning unconditional true"
+- **Pattern T2:** "UNREACHABLE no-op in release enables graceful fallback masking state corruption"
+
+Neither ready for skill v3.3 release (mid-May target). Re-evaluate post-contest.
+
+### Pipeline status delta
+
+- XRPL Sherlock: 2 Medium submitted → still 2. Day 2 goal: 1 additional via VaultInvariant TBD weaponization or Option C dynamic testing pivot.
+- Deadline: Apr 27 (6 days remaining)
+
+### Active exhausted-surfaces list (for future dup-check)
+
+Added to existing exhausted list:
+- `std::visit + UNREACHABLE` in STAmount canAdd/canSubtract (release returns false — safe deny)
+- Batch `checkSignatureFields` lambda sig-field existence checks (tight, no bypass)
+- HTTPClient `abort()` on deadline error (CLI-only, not network-reachable)
+- SponsorshipTransfer `getLedgerEntrySponsorField` UNREACHABLE (upstream owner check sufficient)
+- LogicError / contract.cpp `std::abort()` (safe `[[noreturn]]` terminator convention)
+
+### Key insights (reusable for other XRPL/C++ audits)
+
+1. XRPL uses `LogicError()` (`[[noreturn]] noexcept`) when abort actually intended. Always check `contract.h` for real termination primitives.
+2. `UNREACHABLE` is instrumentation-only in XRPL (stripped NDEBUG). Always resolve macro definition before claiming abort-based DoS.
+3. `enforce = view.rules().enabled(featureX)` pattern common in invariants — breaks indicate feature gating rather than runtime abort.
+4. Pharos Pattern 2 (error handling anti-pattern) match in XRPL manifests as "TBD" comments rather than wrong abort — search for incomplete invariant coverage, not wrong termination.
