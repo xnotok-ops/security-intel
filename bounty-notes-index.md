@@ -274,7 +274,7 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** kfarms Tier 1 EXHAUSTED (Apr 20, 2026) — P1 PARKED, P2+P3+P4+P5 CLOSED. 30 hypotheses tested, 0 candidates. SC skill NEVER loaded. ~3 day used of 5 day cap. Next: Tier 2 OR pivot program.
+- **Status:** Session 4 closed Apr 20, post-mortem identified 10 unexplored angles (see kfarms-unexplored-angles.md). P1-P5 dead-zoned; Tier A queued for Session 5 (refresh_farm + slashed_amount + update_farm_config variants). 30 hypotheses killed, 0 candidates, ~3 day used.
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
 - **Soft cap:** 10 hari total (Session 4 of ongoing), Tier 1 kfarms ~2.8 day remaining of 5 day cap
 - **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
@@ -282,6 +282,9 @@ Audit a specific protocol type? Upload these files:
 - **Parallel pipeline:** xrpl-sherlock still ACTIVE (deadline Apr 27) — Kamino primary post-XRPL
 
 ### Mapping Files
+
+- `kfarms-unexplored-angles.md` (Apr 20, 2026) — 10 post-mortem angles missed in Session 4. Tier A/B/C ranked. MANDATORY read before Session 5.
+- `kamino-session5-kickoff.md` (Apr 20, 2026) — fresh chat handoff template for Tier A audit (refresh_farm + slashed_amount + update_farm_config).
 
 | File | Scope | Phase |
 |---|---|---|
