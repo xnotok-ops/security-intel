@@ -480,3 +480,10 @@ Added Day 3:
 - MPTokenIssuanceSet sle type asserts (keylet-typed read invariant)
 - MPTokenHelpers UNREACHABLE L189/495 (preclaim-gated conds)
 - View.cpp isVaultPseudoAccountFrozen UNREACHABLE L65 (AccountDelete ledger invariant)
+
+### Correction (end of Day 3)
+Re-reading Day 2 insight more carefully: "UNREACHABLE instrumentation-only (stripped NDEBUG)" means NDEBUG is ACTIVE in XRPL release builds, causing assert() to strip → UNREACHABLE becomes no-op. Day 2 interpretation likely correct; Day 3 Gate 0 misread L241 context without checking conditional wrapper. XrplCompiler.cmake L241 strips `-DNDEBUG` but likely only in debug/assert-enabled build paths, not production release.
+
+**Actual verdict on Day 3 sites:** still all KILL, but for the REAL reason: UNREACHABLE no-op → fallthrough returns `tefINTERNAL`/`false`/`tecINTERNAL` gracefully. Not "abort blocked by preflight" as Day 3 framed it.
+
+**Lesson:** always re-read prior session's primitive-level insights before starting new primitive analysis. Day 2 was explicit about this exact topic; I should've consulted it Day 3 Gate 0.
