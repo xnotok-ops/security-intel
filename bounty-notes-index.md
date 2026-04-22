@@ -503,3 +503,564 @@ Location: `bounty-notes/kamino/prior-audits/sec3/`
 - sec3_kamino_report.pdf — Sep 2022, Kamino yvaults (baseline historis)
 
 Use case: Gate 5 invalidation cross-check saat T1P2 transfer_ownership session.
+# Base Azul Research Master Map
+
+> **Single source of truth** untuk riset Base Azul Immunefi Audit Competition.
+> Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
+
+**Last updated:** 2026-04-22 (v2 — data-driven revision post-recon)
+**Owner:** xnotok-ops
+**Phase:** 0 — Scope mapping COMPLETE → ready for Session 1 dispatch
+**Related:** `bounty-notes/k2/` (prior contest), `bounty-notes/xrpl-sherlock/` (concurrent), `bounty-notes/claude-skills/pending-patterns.md` (Patterns K–R queued from this recon)
+
+---
+
+## 1. Program Overview
+
+| Field | Value |
+|---|---|
+| Platform | **Immunefi Audit Competition** |
+| URL | Immunefi bounty page: "Audit Comp \| Base Azul" |
+| Live Since | 21 April 2026 20:00 UTC |
+| Last Updated (scope) | 22 April 2026 (Day 2) |
+| Deadline | **4 May 2026 20:00 UTC** (~12 days remaining) |
+| Chain | Base (Ethereum L2) — testnet Sepolia in-scope, mainnet OOS for contest |
+| Triage | Platform-managed (Immunefi + Base team, 48h weekday SLA) |
+| KYC | Required before payout — status: ❌ pending |
+| Stake | $0 (no stake) |
+| PoC | **Required for ALL severities** (incl. Low + Medium) — Runnable |
+| Responsible Publication | Category 3 (after fix/paid/invalid) |
+| Caller Constraint | **INCLUSIVE** with specific exceptions (see §11 scope-official.md) |
+| Lines of Code (nSLOC) | ~190,000 total → **target surface narrowed to ~300 LoC** via MFD recon |
+
+### Reward Matrix
+
+| Tier | Pool if top-severity = … |
+|---|---|
+| **Critical** | $250,000 (Primary $175K + All Stars $50K + Podium $25K) |
+| **High** | $125,000 |
+| **Medium** | $70,000 |
+| **Low** | $30,000 |
+| **Insights only** | $20,000 |
+
+Token: **USDC on Base**.
+
+### Special Rules
+
+- **Duplicates valid for unfixed bugs**; fix publicly disclosed → new reports invalid.
+- **Mid-contest fixes allowed**; changelog via Discord + program page.
+- **Private known issue x1** — hash variant held by Immunefi; rediscovery = no credit.
+- Base mainnet OOS for contest. Base Sepolia post-20 Apr 2026 is the target environment.
+- Previous audit findings that remain unfixed = **NOT eligible** (known-issue exclusion).
+- Downgrade rules active (see §6 and scope-official.md §6).
+
+### 🔥 Post-Audit Addition Flagged
+
+**`src/multiproof/zk/ZKVerifier.sol`** — 51 LoC, added via commit `01dad23` (subject: "Backport: add verifier contract (#256)") at **2026-04-21 16:40 UTC = 3h20m before contest start (20:00 UTC)**. Tag `v8.1.0` points at this exact commit. **Zero audit coverage** across all 4 Cantina audits. See Pattern K + L in pending-patterns for the methodology.
+
+---
+
+## 2. GitHub Repositories
+
+**Org:** https://github.com/base
+
+### 🎯 In-Scope Repos (target research)
+
+| Repo | Path | Tag/Branch | Commit | Clone Status |
+|---|---|---|---|---|
+| [base/base](https://github.com/base/base) | `repos/base/` | **v0.8.0-rc.15** | `de349fc` | ✅ Cloned |
+| [base/node](https://github.com/base/node) | `repos/node/` | main | latest | ✅ Cloned (43 objects; reth likely remote-loaded) |
+| [base/contracts](https://github.com/base/contracts) | `repos/contracts/src/multiproof/` | **v8.1.0** | `01dad23` | ✅ Cloned + full history fetched |
+| [base/contract-deployments](https://github.com/base/contract-deployments) | `repos/contract-deployments/` | main | latest | ✅ Cloned |
+
+### 📋 Multiproof Source Tree (at v8.1.0, LoC verified)
+
+```
+src/multiproof/
+├── AggregateVerifier.sol         (1032 LoC)  🟡 EXTREME audit coverage (151 mentions, 2 audits)
+├── Verifier.sol                  (  48 LoC)  🟢 LIGHT — nullify logic
+├── mocks/                                    (OOS — test mocks)
+│   ├── MockDevTEEProverRegistry.sol
+│   ├── MockSystemConfig.sol
+│   └── MockVerifier.sol
+├── tee/
+│   ├── NitroEnclaveVerifier.sol  ( 706 LoC)  🟡 HEAVY (2 TEE audits, Nitro 45 mentions)
+│   ├── TEEProverRegistry.sol     ( 260 LoC)  🟡 MODERATE (32 mentions)
+│   └── TEEVerifier.sol           ( 106 LoC)  🟡 MODERATE (7 mentions)
+└── zk/
+    └── ZKVerifier.sol            (  51 LoC)  🟢🟢 FRESH — 0 audit coverage, backported Apr 21
+```
+
+**Total in-scope multiproof:** 2,203 LoC. **Core hunt surface:** ~300 LoC (ZKVerifier 51 + Verifier 48 + nullify path in AggregateVerifier ~60 + finding 3.1.1 resolve path ~100).
+
+### 📚 Reference Repos (NOT in scope)
+
+| Repo | Purpose |
+|---|---|
+| [ethereum-optimism/optimism](https://github.com/ethereum-optimism/optimism) | Security reviews sparse-cloned (44 PDFs). **0 upstream coverage** on any target contracts — confirmed pure Base-native scope. |
+| [paradigmxyz/reth](https://github.com/paradigmxyz/reth) | Upstream Reth (EL). Base modifications in-scope but defer to Tier 2. |
+| [succinctlabs/sp1](https://github.com/succinctlabs/sp1) | ZK prover (OOS itself). `ISP1Verifier` interface consumed by ZKVerifier.sol. |
+
+---
+
+## 3. Audit Coverage Map — VERIFIED DATA
+
+Source: `bounty-notes/base-azul/audits-local/` (4 Cantina PDFs + 44 Optimism reviews = 48 PDFs/TXTs corpus).
+
+### 📊 Per-Audit Manifest (verified via pdfinfo + wc + grep)
+
+| Audit File | Pages | Words | Scope commit | Findings | Nature |
+|---|---|---|---|---|---|
+| `multiproof-1/cantina_coinbase_multiproof_mar2026.pdf` | 21 | 4,420 | `b6c4689b` (Mar 17–23) | 4 Info, 0 other, 4/4 Fixed | **Primary broad audit** (AggVerifier, Verifier, TEE stack) |
+| `multiproof-2/cantina_coinbase_aggregateverifier_apr2026.pdf` | 5 | 923 | `ffe2af8c` (Apr 10–13) | 1 Info, 0 other, 1/1 Fixed | **Fix-verification pass** on AggregateVerifier.sol only |
+| `tee-1/cantina_coinbase_nitro_enclave_mar2026.pdf` | 9 | 2,670 | TBD (Mar 23) | TBD (likely similar informational) | **Primary TEE audit** (Nitro enclave focus) |
+| `tee-2/cantina_coinbase_nitro_enclave_apr2026.pdf` | 7 | 1,692 | TBD (Apr 10) | TBD | **Fix-verification pass** on TEE |
+
+**Optimism upstream:** **0 files** mention any of our target contracts (AggregateVerifier, ZKVerifier, TEEVerifier, TEEProverRegistry, NitroEnclaveVerifier). Dup-check corpus reduces to 4 Cantina `.txt` files for target-specific grep.
+
+### 📈 Term Frequency Signal (confirmed via grep -rh -c -i across 4 Cantina TXTs)
+
+| Term | Mentions | Saturation | Implication |
+|---|---|---|---|
+| AggregateVerifier | **151** | 🔴 EXTREME | Primary target of 2 audits + appendix PoCs |
+| Nitro | 45 | 🔴 HIGH | TEE audits deep-cover enclave attestation |
+| PCR0 | 44 | 🔴 HIGH | Attestation measurements deep-covered |
+| attestation | 33 | 🟡 HIGH | Nitro attestation path covered |
+| TEEProverRegistry | 32 | 🟡 MODERATE | Registration flow touched |
+| TEEVerifier | 7 | 🟡 LIGHT | Delegation wrapper, less surface |
+| DelayedWETH | 3 | 🟢 LIGHT | **1d delay change barely probed** |
+| AnchorStateRegistry | 3 | 🟢 LIGHT | **Integration points barely probed** |
+| soundness | **1** | 🟢 FRESH | **Soundness alert auto-nullify flow barely covered** |
+| **ZKVerifier** | **0** | 🟢🟢 PURE FRESH | **51 LoC brand new, never audited** |
+| **OptimismPortal2** | **0** | 🟢🟢 PURE FRESH | **Delay-removal integration un-audited** |
+| **"intermediate output"** | **0** | 🟢🟢 PURE FRESH | **New Azul sub-range dispute feature un-audited** |
+
+### 📅 Post-Audit Git Diff Analysis (Pattern K applied)
+
+Audit end commit (April) → v8.1.0 = 2 commits, 3 files touched in `src/multiproof/`:
+
+| Commit | Date | Type | Files | Size | Risk Classification |
+|---|---|---|---|---|---|
+| `ddd5a09` | 2026-04-15 15:09 UTC | **Audit-2 fixes** | AggregateVerifier.sol (+13/-9), NitroEnclaveVerifier.sol (+13/-2) | Minor | Regression only; AggregateVerifier diff = comment updates (CWIA offsets); NitroEnclaveVerifier diff = cert expiration loop for non-trusted prefix (finding 1 fix) |
+| `01dad23` | **2026-04-21 16:40 UTC** | **🔥 BACKPORT** | **zk/ZKVerifier.sol (+51/-0)** | **NEW FILE** | **🚨 Pattern L — 3h20m before contest start. Zero audit exposure.** |
+
+### 📝 March Multiproof Audit Findings Summary
+
+All 4 findings Informational, all Fixed:
+
+| ID | Title | Context | Relevance |
+|---|---|---|---|
+| 3.1.1 | Unconditional Proof Threshold Check in resolve Blocks Normal Bond Recovery When Parent Game Is Invalid | AggregateVerifier.sol#L453 | **🎯 HIGH — Pattern M candidate: impact chain mentions ZK verifier nullification permanently stucks game** (see §6 full text) |
+| 3.1.2 | Event Emissions Across Verification Functions Reflect Stale or Incomplete State | AggregateVerifier.sol | Low — event-only |
+| 3.1.3 | Inaccurate NatSpec and Dead Code | Multi-file | Signal: auditor catches dead code patterns (Pattern P relevant for ZKVerifier which wasn't audited) |
+| 3.1.4 | Duplicate code should be put in a helper function | Multi-file | Quality |
+
+### 📝 April Multiproof Audit (AggregateVerifier focus)
+
+1 finding Informational, Fixed:
+- 3.1.1 Document offsets, size, and expected structs (CWIA layout documentation)
+
+**Interpretation:** AggregateVerifier survived broad audit (March, 4 Info) → fix-verification pass (April, 1 Info) = **structurally well-reviewed**. March audit even includes Foundry PoC tests in appendix (`testClaimCredit_ParentBlacklisted_BondToCreator`, `_createAggregateVerifierGame`, `DELAYED_WETH_DELAY`) — **Pattern Q: bicamerally tested, saturation bumps up a tier for `resolve` + `claimCredit` + blacklist paths**.
+
+---
+
+## 4. Research Priority Queue — DATA-DRIVEN (v2)
+
+> **Revised from v1** based on recon discoveries. v1 had AggregateVerifier at P1 — data shows this is over-saturated. Actual fresh ground found via Pattern K (git-diff) + Pattern L (temporal proximity).
+
+### 🟢 Tier 1 — FRESH GROUND (Target HERE)
+
+| Priority | Target | LoC | Audit mentions | Rationale |
+|---|---|---|---|---|
+| **P1** | **`zk/ZKVerifier.sol` full contract** | **51** | **0** | 🚨 Backported 3h20m pre-contest. Never audited. SP1 delegation pattern. Dead error `SP1VerificationFailed()`. `notNullified` modifier ties to Verifier.sol. Contest lists "Forging or bypassing ZK proof verification in AggregateVerifier" as Critical. |
+| **P2** | **`Verifier.sol::nullify()` false-trigger surface** | **~20 (48 total)** | 0 direct (nullify term = 3 mentions in multiproof-1 only) | PERMANENT state flag, gated by `isGameProper && isGameRespected` via AnchorStateRegistry. No un-nullify. Successful false-trigger = permanent brick entire ZK (or TEE) verification path = **Critical** ("Permanent freezing of funds in bridge or dispute game bonds with no available recovery path" OR "Circumventing dispute/challenge mechanism"). |
+| **P3** | **`AggregateVerifier.nullify()` soundness alert flow (L548-602)** | **~60 within 1032** | soundness=1, conflict not mentioned | Validates intermediate-root conflict before calling `IVerifier.nullify()`. Attack surface: (a) make soundness check pass with non-conflicting but crafted intermediate root → brick; (b) bypass soundness detection when legitimate conflict exists → scope explicit High "Bypass soundness alert — 2 conflicting valid same-type proofs fail to nullify". |
+| **P4** | **Finding 3.1.1 variant extension** | `resolve` function + pathway | Fixed per recommendation | Pattern M application — fix narrow to proofCount-threshold move into else-branch. Variants to probe: (a) same permanent-stuck under different trigger combinations (TEE nullified + ZK-only parent), (b) chains of stuck games propagating via child dependencies, (c) bond-recipient reassignment edge cases. Impact chain maps to **Medium (Temp freeze ≥24h) or High (Dispute circumvention)** depending on framing. |
+| **P5** | **Intermediate output roots + CWIA extradata layout** | ~50-100 within AggregateVerifier | 0 mentions of "intermediate output" | NEW Azul feature. Data layout per April audit comments: creator/rootClaim/l1Head/l2BlockNumber/parentGameAddress/intermediateRoots variable-length array. Attack surface: (a) index-out-of-bounds in `intermediateOutputRoot(idx)`, (b) length/offset mismatch vs CWIA bytes (the April fix only added documentation!), (c) malicious proof tricks `counteredByIntermediateRootIndexPlusOne` accounting. |
+
+### 🟡 Tier 2 — MODERATE (if Tier 1 exhausted OR time short)
+
+| Priority | Target | Rationale |
+|---|---|---|
+| **P6** | AggregateVerifier non-nullify state machine | 151 mentions + PoC tests in appendix = highly saturated. Defer unless new pattern emerges from T1 work. |
+| **P7** | `DelayedWETH` 1-day withdrawal delay edge cases | 3 mentions only; delay-halving from 3.5d→1d barely probed. Lower impact ceiling (griefing/temp-freeze). |
+| **P8** | `OptimismPortal2` + `AnchorStateRegistry` Azul-specific mods | 0-3 mentions; delay-removal integration. But OP Stack upstream carries high code saturation from Optimism audits (MCP, Interop, U18) — cross-reference those. |
+| **P9** | `TEEProverRegistry` signer registration edge cases | 32 mentions (moderate) but PCR0 attestation flow is the main risk and Nitro/PCR0 combined = 89 mentions (high saturation). |
+| **P10** | `post-audit NitroEnclaveVerifier diff` (+13/-2 lines) — cert expiration loop for non-trusted prefix | Regression-risk; 13 lines added by audit fix. Check off-by-one / index confusion in new loop. |
+
+### 🔴 Tier 3 — SKIP (unless NEW pattern)
+
+| Priority | Target | Rationale |
+|---|---|---|
+| P11 | `TEEVerifier.sol` internal logic | 7 mentions; slim wrapper. Primitives delegated. |
+| P12 | Pure TEE attestation crypto internals | 45+44+33 mentions = 🔴 extreme saturation. |
+| P13 | `base-reth-node` EIP implementations | 0 audit mentions but requires ~1 day Rust+EVM harness setup. Poor EV given T1 surface is accessible in Solidity Foundry immediately. |
+| P14 | `base-consensus` CL↔EL boundary | Same as P13; setup-cost-prohibitive given 5-day budget + T1 yields. |
+| P15 | RiscZero SP1 circuits / op-succinct core | Explicit OOS per scope. |
+
+---
+
+## 5. Research Status Matrix
+
+Legend: 🔴 Unresearched • 🟡 In-progress • 🟢 Covered (cleared) • ⚫ Parked • ❌ Red (verified hardened) • 💎 Finding candidate
+
+| Module | Tier | Status | LoC | Hours | Finding | Sub-Path Notes | Last Session |
+|---|---|---|---|---|---|---|---|
+| **ZKVerifier.sol** (full) | T1 P1 | 🔴 | 51 | 0 | — | Start: full-read + SP1 interface + Verifier base + call-site in AggregateVerifier | — |
+| **Verifier.nullify() false-trigger** | T1 P2 | 🔴 | 48 (~20 core) | 0 | — | Map `isGameProper`/`isGameRespected` access model; check if external call in AnchorStateRegistry can be spoofed via forged game | — |
+| **AggregateVerifier.nullify() flow** | T1 P3 | 🔴 | ~60 in 1032 | 0 | — | Read L548-602; check soundness condition ("same-type conflict"), intermediate-root validation, trigger conditions for false-pos/false-neg | — |
+| **Finding 3.1.1 variants** | T1 P4 | 🔴 | resolve+blacklist path | 0 | — | Re-read fix commit dd587c9a; probe alternative trigger combos | — |
+| **Intermediate output roots layout** | T1 P5 | 🔴 | ~100 | 0 | — | CWIA extradata packing; length/offset math; counteredByIntermediateRootIndexPlusOne accounting | — |
+| AggregateVerifier other state | T2 P6 | ⚫ | 1032 total | 0 | — | Park unless new pattern | — |
+| DelayedWETH 1d delay | T2 P7 | 🔴 | ~TBD | 0 | — | Locate DelayedWETH.sol, check WITHDRAWAL_DELAY constant | — |
+| OptimismPortal2 Azul mods | T2 P8 | 🔴 | ~TBD | 0 | — | grep "Portal2" in repo + diff vs OP upstream | — |
+| TEEProverRegistry | T2 P9 | 🔴 | 260 | 0 | — | Registration + orphan-removal flow | — |
+| NitroEnclaveVerifier post-audit diff | T2 P10 | 🔴 | +13 | 0 | — | Line 618-625 cert expiration loop | — |
+| TEEVerifier internal | T3 P11 | ❌ | 106 | 0 | — | Red — skip | — |
+| base-reth-node | T3 P13 | ⚫ | huge | 0 | — | Parked, setup cost too high | — |
+
+**Update rule:** Tiap sesi riset, update status + hours + sub-path notes. Red hypothesis tidak di-revisit tanpa NEW pattern (rule h).
+
+---
+
+## 6. Known Issues & Exclusions (CRITICAL — avoid dup)
+
+### Dup-Check Workflow (MANDATORY sebelum submit)
+
+```bash
+# Cantina-only dup-check (Optimism confirmed 0 coverage, skip from main scan)
+grep -rn -i "candidate_phrase" \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/multiproof-1/*.txt \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/multiproof-2/*.txt \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/tee-1/*.txt \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/tee-2/*.txt
+
+# If finding-candidate overlaps Kona / Fault Proof / Interop paths, ALSO include these 10 upstream relevant PDFs:
+#   2026_03-Kona-Spearbit.txt (Kona — private known issues exist)
+#   2025_01-MT-Cannon-Base.txt (Base-specific Cannon)
+#   2024_05-FaultProofs-Sherlock.txt (pre-Azul fault proof design)
+#   2024_08_Fault-Proofs-{MIPS,No-MIPS}.txt (fault proof detail)
+#   2025_0{3,4,5}-Interop-{Contracts,Portal}*.txt (bridge/portal patterns)
+#   2026_01-U18-Cantina.txt (recent upgrade)
+```
+
+**Narrow-phrase discipline (V12 method):**
+- 3–5 spesifik words dari hipotesis
+- NO broad keywords (`reentrancy`, `overflow`, `access control`)
+- Match = KILL (rule h)
+- Pass 2 synonym expansion: `proof` → `attestation` → `witness` → `signature` → `claim`; `nullify` → `invalidate` → `disable` → `brick` → `retire`; `conflict` → `mismatch` → `discrepancy` → `divergence`
+
+### Known Finding to Extend (Pattern M candidate) — **FULL TEXT**
+
+**3.1.1 Unconditional Proof Threshold Check in resolve Blocks Normal Bond Recovery When Parent Game Is Invalid** (Informational, Fixed in `dd587c9a`)
+
+> Context: AggregateVerifier.sol#L453
+>
+> The resolve function in AggregateVerifier enforces the proofCount threshold check unconditionally after the branch that sets status = CHALLENGER_WINS when the parent game is blacklisted, retired, or lost. With the planned upgrade to PROOF_THRESHOLD = 2, a game initialized with only one proof would have resolve revert with NotEnoughProofs, rolling back the status change and leaving the game stuck as IN_PROGRESS.
+>
+> Since PROOF_THRESHOLD = 2 requires both a TEE and ZK proof, a second proof can be submitted via verifyProposalProof before calling resolve to satisfy the threshold. The initialization proof already validates the state transition, so the second proof type can be produced and submitted within the 7-day SLOW_FINALIZATION_DELAY window.
+>
+> **The edge case arises if the second proof cannot be submitted within the 7-day window. For example, if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game is permanently stuck as IN_PROGRESS, the bond is unrecoverable through normal operations and requires admin intervention via DelayedWETH, and child games built on top are also blocked from resolving.**
+>
+> Recommendation: Move the proofCount threshold check and the isChallenged bond recipient reassignment into the else branch so they only apply when the parent game is valid. When the parent is invalid, resolution should proceed directly to CHALLENGER_WINS and mark resolvedAt without requiring the proof threshold to be met.
+
+**How to weaponize (Pattern M):**
+- Auditor fix = proofCount check moved to else-branch. Check `git show dd587c9a -- src/multiproof/AggregateVerifier.sol` to understand exact fix scope.
+- Variant vectors:
+  1. Same permanent-stuck outcome under **different trigger combination** — e.g., TEE verifier nullified (not ZK) + parent blacklisted with only ZK proof on child
+  2. **Cascading child games** — parent IN_PROGRESS blocks N children, map the DAG
+  3. **Bond-recipient reassignment** — auditor noted "isChallenged bond recipient reassignment executes unconditionally after parent status branch" as secondary concern; fix moves this too, but does it correctly handle corner case where game was challenged AND parent was blacklisted?
+- Impact chain mapping:
+  - "stuck IN_PROGRESS >24h" → Immunefi Medium ("Temporary freezing of funds for at least 24 hours")
+  - "child games cascading blocked" → potentially escalate to High — but stays Smart Contract tier, more likely Medium
+  - "requires admin intervention via DelayedWETH" → if admin path has its own blocker (e.g., Security Council OOS under their mandate) → upgrade to Critical ("Permanent freezing of funds in the bridge or in dispute game bonds with no available recovery path")
+
+### Program Exclusions (summary — full in scope-official.md §6)
+
+**Hard OOS:** Mainnet testing, oracle manip, flash loans (basic econ), 51%/governance, Sybil, centralization risks, self-exploited, leaked keys, depegging, secrets in git, best-practice-only, test files, phishing.
+
+**Downgrade triggers:**
+- Attack requires compromising Base infra (not code-review-discoverable) → downgrade
+- Assumes Base won't dispute/blacklist → downgrade
+- Relies on invalid TEE/ZK proof → downgrade (TEE especially) unless key compromise proven unnecessary
+- Assumes service won't be restarted → downgrade
+
+**Privileged addresses:**
+- OOS within privileges: TEE Proposer/Registrar signers, Security Council, Sequencer
+- OOS even exceeding: L1 Ethereum validators, third-party bridge validators, Base corporate infra
+
+---
+
+## 7. Submission Gate Pre-Check (bounty-lessons v2.1)
+
+Sebelum submit ANY finding, run:
+
+1. **Gate 1 — Scope check:** Target dalam `src/multiproof/{root, zk, tee}` atau explicit OOS folders?
+2. **Gate 2 — OOS pattern check:** Exploit require compromised Base infra / invalid proof / admin-exceeding authority? Cross-check scope-official.md §6 downgrades.
+3. **Gate 3 — Validity check:** Real exploitable path w/ runnable Foundry PoC (MANDATORY all severities incl Info).
+4. **Gate 4 — Severity math:** Match Impacts in Scope verbatim — `AggregateVerifier bypass` vs `Temp freeze ≥24h` vs `Soundness alert bypass`.
+5. **Gate 5 — Audit dup check:** `grep -rn -i "narrow-phrase" multiproof-*/*.txt tee-*/*.txt`. Hit → bounty-lessons skill evaluation (rule h: KILL unless NEW pattern justifies variant).
+6. **Gate 5.5 — Optimism upstream check (conditional):** Only if finding touches Kona / Cannon / Fault Proof / Interop / Portal. Otherwise skip (confirmed 0 coverage).
+7. **Gate 6 — Deployment state:** N/A (testnet-only contest, no mainnet query needed). But check Sepolia addresses in `contract-deployments/` if finding is config-gated.
+8. **(Pattern M addition) Gate 5.6 — Informational upgrade scan:** If hypothesis originated from an auditor Informational finding, is impact chain extension materially different from auditor's scenario? Framing must be "auditor noted X, this extension Y" NOT "auditor got severity wrong".
+
+Bonus: cross-reference `smart-contract-audit-common` + `smart-contract-audit-evm` patterns before finalizing report.
+
+---
+
+## 8. Session Log
+
+### Session 0 — 2026-04-22 (Phase 0 Scope Mapping, ~2h)
+
+**Accomplishments:**
+- Captured Immunefi scope: $250K pool, 12 days remaining, 190K nSLOC initial
+- Classified caller-constraint: **INCLUSIVE** with downgrade rules
+- Generated + ran `setup-base-azul.sh` — 4 repos cloned, optimism sparse-checkout (44 PDFs)
+- Generated + ran `extract-audits.sh` — 48 PDFs → 48 TXTs
+- **6 recon rounds executed (Pattern R case study):**
+
+| Round | Action | Outcome |
+|---|---|---|
+| R1 | Repo clone + Optimism sparse | 50 PDFs inventoried |
+| R2 | PDF → TXT extraction | Dup-check corpus operational (48 .txt) |
+| R3 | Term frequency across Cantina | 3 fresh-ground terms identified: ZKVerifier (0), OptimismPortal2 (0), "intermediate output" (0) |
+| R4 | PDF metadata analysis (pdfinfo + word counts) | April multiproof audit confirmed as 5-page fix-verification (1 Info finding) not full audit |
+| R5 | Post-audit git diff (Pattern K applied) | **ZKVerifier.sol** identified: 51 LoC, backported commit `01dad23` at Apr 21 16:40 UTC = 3h20m pre-contest (Pattern L) |
+| R6 | LoC inventory + nullify call-graph | Target surface narrowed to ~300 LoC (ZKVerifier 51 + Verifier 48 + AggregateVerifier.nullify 60 + intermediate-root layout 100 + finding 3.1.1 variants) |
+
+- **Target space reduction: 190,000 nSLOC → ~300 LoC = 633× focus factor** in ~2h recon
+- Drafted 8 patterns (K–R) to `claude-skills/pending-patterns.md` — 849 total lines in file now
+
+**Key analytic decisions:**
+- **v1 P1 (AggregateVerifier state machine) demoted to T2 P6** — data shows 151 mentions + Foundry PoC tests in appendix = over-saturated
+- **v2 P1 = ZKVerifier.sol full contract** (0 coverage, 51 LoC, backported 3h20m pre-contest)
+- **v2 P2 = Verifier.nullify() false-trigger surface** (permanent brick attack ceiling = Critical)
+- **v2 P3 = AggregateVerifier.nullify() soundness alert flow** (explicit Impacts-in-Scope High target)
+- **v2 P4 = Finding 3.1.1 variant extension** (Pattern M candidate, impact chain already documented by auditor)
+- **v2 P5 = Intermediate output roots layout** (fresh Azul feature, 0 audit mentions)
+
+**Status end-of-session:** Phase 0 COMPLETE. Ready Session 1 dispatch.
+
+**Files produced in Phase 0:**
+- `bounty-notes/base-azul/README.md`
+- `bounty-notes/base-azul/scope-official.md`
+- `bounty-notes/base-azul/audit-download-guide.md`
+- `bounty-notes/base-azul/base-azul-research-mapping.md` (this file, v2)
+- `bounty-notes/base-azul/scripts/setup-base-azul.sh`
+- `bounty-notes/base-azul/scripts/extract-audits.sh`
+- `bounty-notes/claude-skills/pending-patterns.md` (patterns K–R appended)
+
+### Session 1 — PLANNED (TBD date)
+
+**First Sprint (4-6h, P1 ZKVerifier focused):**
+
+| Hour | Task | Deliverable |
+|---|---|---|
+| 0:00-0:30 | Full read `zk/ZKVerifier.sol` + `Verifier.sol` + `interfaces/multiproof/IVerifier.sol` + `interfaces/dispute/IAnchorStateRegistry.sol` + `src/dispute/zk/ISP1Verifier.sol` | Complete data-flow diagram |
+| 0:30-1:00 | Locate `AggregateVerifier.sol` ZKVerifier call-sites — where imageId/journal/proofBytes originate; check ZK_IMAGE_HASH constant | Call-graph notes |
+| 1:00-1:30 | SP1 gateway external dependency research: which gateway deployed on Sepolia? revert semantics? | SP1 integration notes |
+| 1:30-2:30 | Attack hypothesis brainstorm (≤5 candidates): forge proof via imageId/journal manip, replay across games, dead-error significance, nullify-based bricking via ZK side, SP1 gateway version/soundness-fix (v6.0.2 req) | Hypothesis list w/ Gate-0 pre-check |
+| 2:30-3:30 | For top hypothesis → Gate 1-5 pre-check (scope + OOS + validity + severity + narrow-phrase dup grep) | Keep list trimmed to 2-3 |
+| 3:30-5:00 | Top hypothesis PoC sketch in Foundry (clone base/contracts, `forge init` local, write minimal repro) | Draft PoC |
+| 5:00-6:00 | Session journal + decision: continue P1 / pivot to P2 (Verifier.nullify) / park and context-switch | Session 1 log entry |
+
+**Second Sprint (4-6h, P2 Verifier.nullify OR P3 soundness alert):**
+
+Continues from Session 1 First Sprint decision point. Same structure.
+
+**Third Sprint (4-6h, P4 Finding 3.1.1 variants OR pivot to P5 intermediate roots):**
+
+Pattern M application on finding 3.1.1. Re-read fix commit `dd587c9a`, generate 3 variant trigger scenarios, Gate-0 each.
+
+---
+
+## 9. Next Session Handoff Template
+
+Copy-paste block untuk fresh chat:
+
+```
+Lanjut Base Azul research — resume dari mapping v2.
+
+═══ CONTEXT ═══
+- Platform: Immunefi Audit Comp ($250K pool if Critical)
+- Stake: $0 | KYC: ❌ pending | PoC: required ALL severities
+- Deadline: 4 May 2026 20:00 UTC (~N days remaining)
+- Caller constraint: INCLUSIVE w/ downgrade rules active
+
+═══ MASTER MAP ═══
+File: C:\Users\USER\bounty-notes\base-azul\base-azul-research-mapping.md
+Scope: 4 Cantina audits + 44 Optimism reviews (0 upstream coverage of target contracts)
+Target surface: ~300 LoC narrow hunt (from 190K nSLOC initial)
+Repos cloned: bounty-notes/base-azul/repos/{base@v0.8.0-rc.15, node, contracts@v8.1.0, contract-deployments}
+
+═══ CURRENT TARGET ═══
+Tier 1 P1: zk/ZKVerifier.sol full contract (51 LoC, 0 audit coverage, backported 3h20m pre-contest)
+Backup: T1 P2 Verifier.nullify() false-trigger (permanent-brick surface, Critical ceiling)
+
+═══ LAST SESSION ═══
+[Paste: last Session Log entry from §8]
+
+═══ TASK ═══
+[Spesifik apa yang mau di-gas — e.g., "First Sprint Hour 0-2 per §8 Session 1 plan: read ZKVerifier + map call-sites + hypothesis brainstorm"]
+
+═══ RULES ACTIVE ═══
+- HARD LOCK: max 2 submits (high-competition contest), T1 only unless new pattern
+- bounty-lessons v2.1 auto-trigger on finding candidate (+ Pattern M Gate 5.6 if Info-upgrade)
+- Red hypothesis tidak revisit tanpa NEW pattern (rule h)
+- Narrow-phrase dup-check SEBELUM PoC: grep di 4 Cantina .txt (Optimism upstream 0 coverage = skip)
+- Soft cap total Base Azul: 5 hari. T1 first sprint: 4-6h max, then decision.
+
+═══ DUP-CHECK COMMAND ═══
+grep -rn -i "candidate_phrase" \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/multiproof-*/*.txt \
+  /mnt/c/Users/USER/bounty-notes/base-azul/audits-local/tee-*/*.txt
+
+═══ SKILLS TO LOAD ═══
+- smart-contract-audit-common (base)
+- smart-contract-audit-evm (layer)
+- bounty-lessons v2.1 (submit gate)
+- Optional: tools-reminder v1.1 (if installing SP1 harness / foundry-based fuzzers)
+
+═══ PATTERNS IN PENDING (validate during hunt if relevant) ═══
+K (git-diff), L (temporal), M (Info upgrade), N (circuit-breaker), O (audit-PDF extract),
+P (dead-error), Q (PoC appendix), R (case study)
+
+Gas.
+```
+
+---
+
+## 10. Quick Reference — Addresses & Key Paths
+
+### Commits
+
+| Item | Commit | Date | Note |
+|---|---|---|---|
+| Contract scope tag v8.1.0 (= HEAD) | `01dad23` | 2026-04-21 16:40 UTC | "Backport: add verifier contract (#256)" — 🚨 ZKVerifier added here |
+| Audit-2 fixes | `ddd5a09` | 2026-04-15 15:09 UTC | Regression only (comment + cert expiration loop) |
+| April audit scope | `ffe2af8c` | 2026-04-09 17:11 UTC | AggregateVerifier only |
+| March audit fix commit | `dd587c9a` | 2026-03-~25 | Finding 3.1.1 fix (resolve + parent blacklist) |
+| March audit scope | `b6c4689b` | 2026-03-~16 | Broad multiproof audit |
+| base/base scope tag v0.8.0-rc.15 | `de349fc` | 2026-04-20 23:13 UTC | Offchain Rust scope |
+
+### Sepolia Deployed Addresses
+
+*To be populated from `repos/contract-deployments/` during Session 1. Check `deployments/sepolia/*.json` or similar.*
+
+| Contract | Sepolia Address |
+|---|---|
+| AggregateVerifier (current impl) | TBD Session 1 |
+| TEEVerifier | TBD |
+| ZKVerifier | TBD |
+| TEEProverRegistry | TBD |
+| DelayedWETH | TBD |
+| OptimismPortal2 | TBD |
+| AnchorStateRegistry | TBD |
+| SP1 Verifier Gateway | TBD (check ZKVerifier constructor args) |
+
+### Key Paths
+
+- Master map: `C:\Users\USER\bounty-notes\base-azul\base-azul-research-mapping.md`
+- Scope official: `C:\Users\USER\bounty-notes\base-azul\scope-official.md`
+- Audits: `C:\Users\USER\bounty-notes\base-azul\audits-local\{multiproof-1,multiproof-2,tee-1,tee-2}/` (4 PDFs + 4 TXTs)
+- Optimism corpus: `audits-local\optimism-reviews\optimism\docs\security-reviews\` (44 PDFs + 44 TXTs)
+- Source repos: `C:\Users\USER\bounty-notes\base-azul\repos\{base,node,contracts,contract-deployments}\`
+- Target files (multiproof):
+  - `repos\contracts\src\multiproof\zk\ZKVerifier.sol` (51 LoC) ⭐ P1
+  - `repos\contracts\src\multiproof\Verifier.sol` (48 LoC) ⭐ P2
+  - `repos\contracts\src\multiproof\AggregateVerifier.sol` (1032 LoC, focus L453/L548-602) ⭐ P3/P4
+  - `repos\contracts\src\dispute\AnchorStateRegistry.sol` (gate contract — L162/L225/L269)
+- Sessions: `C:\Users\USER\bounty-notes\base-azul\sessions\`
+- Findings drafts: `C:\Users\USER\bounty-notes\base-azul\findings\`
+- Scripts: `C:\Users\USER\bounty-notes\base-azul\scripts\{setup-base-azul.sh,extract-audits.sh}`
+
+### Key Spec URLs
+
+- https://specs.base.org/upgrades/azul/overview — Azul overview
+- https://specs.base.org/upgrades/azul/proofs — Proof system (ALREADY READ, summary in scope-official.md §4)
+- https://specs.base.org/upgrades/azul/exec-engine — EL changes (8 EIPs)
+- https://docs.base.org/base-chain/node-operators/base-v1-upgrade — operator migration
+- https://specs.base.org/llms-full.txt — full LLM context dump
+
+---
+
+## 11. Decision Framework (Timing Caps)
+
+### Pipeline context (split decision TBD per user)
+
+| Program | Status | Deadline | Estimated budget |
+|---|---|---|---|
+| XRPL Sherlock | ACTIVE (2 Med submitted) | 27 Apr 2026 | 3-4 days remaining |
+| Kamino T1P2 | NEXT (post-XRPL) | Open (~4 days work) | 4 days |
+| KAST S4 | Cherry-pick | Open (1 day cap) | 1 day |
+| **Base Azul** | **Phase 0 COMPLETE** | **4 May 2026** | **4-5 days max** (split pending) |
+
+### Base Azul time-box rules
+
+1. **First Sprint (Session 1) = 4-6h on P1 ZKVerifier.** Decision gate at sprint-end:
+   - Finding candidate identified → Gate 1-6 check → if passes → 1-2 day PoC + report → submit
+   - No candidate, partial surface explored → continue P1 second sprint (4-6h)
+   - No candidate, P1 exhausted → pivot to P2 (Verifier.nullify) same-day, 4-6h
+2. **Tier 1 total = 3 days max** (ZKVerifier + nullify surface + soundness flow). No candidate → pivot Tier 2 (1 day) or close chapter.
+3. **Tier 2 = 1 day max** (only if T1 exhausted AND time remains).
+4. **Tier 3 only dengan NEW pattern** (default skip).
+5. **Total soft cap: 5 days. Hard cap: 5.5 days** (reserve 6-12h for report polish + Gate 5.6 Pattern M check if Info-upgrade variant).
+
+### Decision tree at Session 1 end
+
+```
+4-6h First Sprint on P1 ZKVerifier complete. Decision:
+├── 💎 Candidate found → Gate 1-6 check → PoC → submit (1-2d work) → DONE
+├── 🟡 Partial progress, surface still promising → Sprint 2 on P1 (4-6h)
+├── 🔴 P1 exhausted, 0 candidate → pivot P2 Verifier.nullify (4-6h)
+└── ❌ Both P1+P2 exhausted, 0 candidate → pivot P3 soundness OR P4 Finding 3.1.1 variants
+```
+
+---
+
+## 12. Pivot Triggers (Kill Conditions)
+
+Close Base Azul chapter kalau:
+
+- [ ] 5 days research, 0 Medium candidate passes Gate 1–6
+- [ ] 2 Medium submissions → rejected → no new hypothesis
+- [ ] XRPL / Kamino / KAST S4 workload spillover exceeds allotted days
+- [ ] Major mid-contest fix drop that kills active hypothesis (check Discord + program page daily)
+- [ ] Public disclosure of private known issue that matches active hypothesis (implies we matched known issue, no credit)
+- [ ] User decision: explicit pivot to higher-EV program
+
+---
+
+## 13. Key Lessons from Phase 0 (queued to pending-patterns.md)
+
+**All 8 patterns (K–R) appended to `bounty-notes/claude-skills/pending-patterns.md` as of 2026-04-22.** File now 849 lines, 8 new patterns added via clean block append.
+
+Summary of what Base Azul Phase 0 teaches:
+
+| Pattern | Tier | Core insight |
+|---|---|---|
+| K | 🔴 HIGH | Post-audit git-diff reveals fresh ground. 190K LoC scope → 51 LoC target via one `git log audit..HEAD` call. |
+| L | 🔴 HIGH | Commits landing within 24h of contest-start scope-freeze = almost always under-scrutinized. Especially "Backport"/"add verifier"-type commits. |
+| M | 🔴 HIGH | Auditor Informational findings often contain Medium+ impact chains (admin-recovery mitigations may not qualify under platform severity matrix). Extend trigger scenarios, don't challenge severity. |
+| N | 🟡 MED | Circuit-breaker patterns (permanent-state nullify with gate) = explicit attack surface. 5 sub-vectors enumerated. |
+| O | 🟡 MED | Cantina audit PDF format is extractable via regex. LaTeX+LuaTeX fingerprint identifies template. |
+| P | 🟡 MED | Dead error declarations in Solidity = intentional-check-dropped risk signal, especially in fresh (un-audited) files. |
+| Q | 🟢 LOW | PoC test code in audit appendix = bicameral review, bumps saturation tier by 1. |
+| R | 🟢 LOW | MFD Phase 0 recon efficacy case study. 633× target reduction in ~2h. Template for future programs. |
+
+**Release trigger watch:**
+- `bounty-lessons v2.2` = 1 more validated case on Pattern M → ready to ship
+- `smart-contract-audit-evm v3.3` = 2 more cases each on Pattern N + P
+- `bounty-workflow v2.3` = 2 more cases each on Pattern K + L
+- `tools-reminder v1.2` = audit-pdf-meta-extract.sh script work + Spearbit/Zeppelin fingerprints (Optimism corpus has samples already)
+
+**J retired → K-R supersede.** Pattern J ("saturation vs skill-match tradeoff") from v1 was hypothetical; v2 data shows actual method is git-diff + temporal (K+L), which is more actionable and objective than the subjective skill-match calculus J proposed.
+
+---
+
+## Changelog
+
+| Date | Version | Change |
+|---|---|---|
+| 2026-04-22 | v1 | Initial mapping created. Phase 0 scope gathering complete. 4 scope items captured, 4 prior audits inventoried, 13-priority queue constructed, 5-day soft cap set. Tier 1 P1 = AggregateVerifier (hypothesis-based). |
+| 2026-04-22 | **v2** | **Data-driven revision post 6-round recon.** Patterns K+L applied: ZKVerifier.sol identified as Tier 1 P1 (51 LoC, 0 audit, backported 3h20m pre-contest). Section 3 rewritten with verified term frequencies + post-audit git diff + Finding 3.1.1 impact chain. Section 4 priority queue fully revised. Section 5 status matrix populated with actual LoC + target files. Section 6 includes Finding 3.1.1 full text for Pattern M weaponization. Section 8 Session 0 log extended with 6-round recon detail + Pattern R case study reference. Section 9 handoff template updated. Section 10 paths updated with commit table. Section 13 Key Lessons rewritten to reference 8 pending patterns (K–R). 633× target-space reduction achieved (190K → ~300 LoC). |
