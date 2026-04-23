@@ -1209,3 +1209,4 @@ Option A is the minimal fix if the declared error is confirmed legacy residue.
 - Severity: Insight (Security Best practices)
 - Status: Chief Finding, confirmed by project
 - Artifacts: bounty-notes/base-azul/findings/base-azul-pattern-p-report.md
+| SKILL-SPLIT-STRATEGY.md | claude-skills/ | Decision doc: kapan dan bagaimana split skill saat approach constraints | Consult saat YAML description > 900 chars OR SKILL.md > 1500 lines |
