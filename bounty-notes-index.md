@@ -1199,3 +1199,13 @@ Option A is the minimal fix if the declared error is confirmed legacy residue.
 - Cantina Coinbase Multiproof Audit (March 2026), finding 3.1.3 "Inaccurate NatSpec and Dead Code" (parallel reasoning)
 - ISP1Verifier interface contract at `src/dispute/zk/ISP1Verifier.sol`
 - Parent `Verifier` abstract at `src/multiproof/Verifier.sol` (normalized error surface reference)
+
+## Base Azul — Immunefi #74371 (CONFIRMED 2026-04-22)
+
+- Pattern: P (dead error declaration, no defensive wrapper)
+- File: src/multiproof/zk/ZKVerifier.sol:19
+- Commit: 01dad23 (tag v8.1.0, backport 3h20m pre-contest)
+- Finding: SP1VerificationFailed error declared but never raised
+- Severity: Insight (Security Best practices)
+- Status: Chief Finding, confirmed by project
+- Artifacts: bounty-notes/base-azul/findings/base-azul-pattern-p-report.md
