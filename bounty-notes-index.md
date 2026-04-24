@@ -2122,3 +2122,105 @@ Kill hypothesis immediately if:
 | Date | Event |
 |---|---|
 | 2026-04-25 | MFD complete — scope captured, 20 files snapshotted, H1-H10 hypothesis shortlist drafted, V12 paste pending |
+# Monetrix Session 2 Log — 2026-04-25 (PoC verify + C4 submit)
+
+**Duration:** ~1h
+**Objective:** Verify H9-v2 PoC compiles + runs locally → fix arithmetic errors → submit C4 report
+**Status at start:** PoC drafted in sandbox, ~$60K phantom severity claimed (overstated)
+**Status at end:** PoC PASS locally + C4 submission CREATED with 2h edit window
+
+---
+
+## What happened
+
+### PoC iteration 1 (FAIL)
+- VAULT_SUPPLIED_BTC_WEI = 1e8 (1 BTC, $60K notional)
+- Assumed Gate 4 cap = $274K (WRONG — factor 1000 off)
+- Actual cap = $274 → far below $60K real surplus
+- Assertion `proposedYield > surplusReal` failed: 273_972_602 (cap) ≤ 60_000_000_000 (surplus)
+- Fix: scale supplied down to 0.001 BTC so real surplus < cap
+
+### PoC iteration 2 (PASS)
+- VAULT_SUPPLIED_BTC_WEI = 1e5 (0.001 BTC, $60 notional)
+- Real surplus $60 < cap $274 → Gate 3 binds (which phantom defeats)
+- Reported surplus $120 = 2x real → proposedYield = $120 per cycle
+- Distribution: foundation $24 + insurance $12 + sUSDM $84 USDM mint
+- INV-1 violated by exactly $60 in single cycle ✓
+
+### File copy issue
+- First `cp` from Downloads didn't replace local `test/c4/C4Submission.t.sol`
+- forge said "No files changed, compilation skipped"
+- Root cause: Downloads file = old version (downloaded BEFORE in-place edit was synced to outputs/)
+- Fix: re-presented file via present_files tool, user re-downloaded fresh, md5 verified `1ed76fc0d9cb516e5c2563544d92743e`
+
+### Markdown rendering bug at submit
+- Vulnerability details + PoC field had bare `$` characters in narrative
+- C4 markdown renderer interprets `$...$` as LaTeX math mode
+- Result: "1 BTC at $60,000 gives N = $60,000" rendered as "1 BTC at 60,000givesN =60,000"
+- Fix: replaced all narrative `$` with "USD" (e.g., `$60` → `USD 60`)
+- Code blocks unaffected (math mode only triggers outside code blocks)
+
+---
+
+## C4 submission record
+
+| Field | Value |
+|---|---|
+| Program | Monetrix |
+| Severity | High |
+| Title | Accountant supplied-registry uint64/uint32 type mismatch enables duplicate entries that double-count backing |
+| Submitter | notok |
+| Submission count | 1/2 used (warden cap = 2 submissions per audit) |
+| Edit window | 2 hours from creation |
+| Lock time | 7:22 AM (per user's local TZ — Singapore) on 2026-04-25 |
+| Repo commit | 3d94be1361ca01d959f9165a78f0d75c5657fe3e |
+
+### Links to root cause (5)
+1. MonetrixAccountant.sol L66-L73 (struct + mappings)
+2. MonetrixAccountant.sol L148-L157 (read path uint32 downcast)
+3. MonetrixAccountant.sol L250-L256 (notifyVaultSupply)
+4. MonetrixAccountant.sol L259-L295 (addMultisigSupplyToken + _resolvePerp)
+5. MonetrixVault.sol L333-L346 (supplyToBlp entry)
+
+### Submission status: SAVED, awaiting lock + triage
+
+---
+
+## Pipeline state after Session 2
+
+| Program | Status | Notes |
+|---|---|---|
+| **Monetrix** | **SUBMITTED, awaiting lock + triage** | 1/2 submission slots used. 1 slot remaining for backup finding (H1 if discovered) |
+| base-azul F2 | Awaiting triage | Report 74730 |
+| XRPL Sherlock | Awaiting triage | 2 Medium, deadline Apr 27 20:00 UTC |
+| Kamino T1P2 | Queued | 4d budget, post-XRPL |
+| SG Forge | Upcoming May | - |
+
+---
+
+## Lessons learned (candidates for next skill update)
+
+### LESSON: Gate 4 cap arithmetic
+- Cap formula: `supply × maxAnnualBps × elapsed / (10000 × 365 days)`
+- For 1M supply at 12% APR over 20h: cap ≈ $274 (NOT $274K)
+- ALWAYS double-check decimal scale: 1M USDM in 6-dp = 1e12 wei; cap 2.74e8 wei = $274
+- Gate 4 cap moderates per-cycle yield; phantom impact = duration extension when cap binds
+
+### LESSON: Markdown math-mode side effect
+- Bare `$` in narrative prose triggers LaTeX math rendering on GitHub/C4/Sherlock
+- Bug: `$60,000 gives N = $60,000` → renders as "60,000givesN =60,000" with italicized math
+- Fix patterns:
+  - Replace `$amount` with `USD amount` in narrative
+  - Use backticks: `` `$60,000` `` (renders as inline code)
+  - Escape: `\$60,000` (renders as `$60,000`)
+- Pre-submit checklist: `grep -n '\$[0-9]' draft.md` — every hit is a risk
+
+### LESSON: file-replace verify pattern
+- After `cp` from Downloads to repo, ALWAYS verify md5 matches expected
+- forge "No files changed, compilation skipped" = downloaded file was stale
+- Pattern: send fresh file via present_files → user re-downloads → user verifies md5 → cp → forge run
+
+### LESSON: PoC scale design
+- Pick supplied notional s.t. `real_surplus < Gate_4_cap` so Gate 3 binds (single-cycle demo)
+- Pick supplied notional s.t. `real_surplus > Gate_4_cap` if demonstrating duration extension (multi-cycle demo)
+- For HIGH severity: even small per-cycle delta is OK, as long as ratio (2x or N+1) is preserved and exploit is repeatable
