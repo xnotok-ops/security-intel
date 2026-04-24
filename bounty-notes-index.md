@@ -1801,3 +1801,324 @@ The full PoC file `test/FindingPoc.t.sol` is attached to this submission (or ava
 - Scope §5 Roles (permissionless ZK prover)
 - Scope §11 Impact catalog (Critical mapping)
 - Cantina multiproof Mar 2026 Finding 3.1.1 (pre-nullify variant, Informational) — differential covered above
+# Monetrix — Research Mapping (Master)
+
+**Created:** 2026-04-25 (Session 0, Phase 0)
+**Status:** 🟢 Active — 10-day C4 contest
+**Deadline:** 2026-05-04 20:00 UTC (~9 days remaining)
+**Last updated:** 2026-04-25
+
+---
+
+## 1. Program Overview
+
+| Field | Value |
+|---|---|
+| Program | Monetrix |
+| Platform | Code4rena (contest) |
+| Type | SC-EVM (Solidity) |
+| Chain | HyperEVM (Hyperliquid) |
+| Model | USDC-backed synthetic $ stablecoin + staked yield wrapper (Ethena-like) |
+| Repo | `https://github.com/code-423n4/2026-04-monetrix` |
+| Total prize | $22K USDC |
+| HM max | $19.2K USDC |
+| PoC | MANDATORY (template `test/c4/C4Submission.t.sol`) |
+| Dates | 2026-04-24 20:00 UTC → 2026-05-04 20:00 UTC |
+| nSLoC | 1,726 across 20 files |
+| Caller-constraint | HYBRID STRICT (Operator compromise OOS; code bugs IN) |
+| Prior audits | N/A (fresh) |
+| V12 baseline | **Run 2147 — `v12.sh/runs/2147/public`** (PENDING FETCH) |
+
+**Protocol TL;DR:** USDC → USDM (6-dp 1:1) → staked into sUSDM (ERC-4626 w/ cooldown). Backing composed of (a) EVM USDC, (b) L1 spot USDC + whitelisted spot tokens, (c) Portfolio Margin 0x811 supplied slots, (d) signed perp account value (delta-neutral hedge), (e) HLP equity mark-to-market. Accountant enforces 4-gate settle for off-chain yield declaration.
+
+---
+
+## 2. GitHub Repositories
+
+| Repo | Role | Cloned | In-scope |
+|---|---|---|---|
+| `code-423n4/2026-04-monetrix` | Main contest repo | ✅ 2026-04-25 | src/** |
+| `hyperliquid-dev/hyper-evm-lib` | Library dep (submodule) | ✅ (via recurse) | No (lib) |
+| `OpenZeppelin/openzeppelin-contracts-upgradeable` | Library dep | ✅ (via recurse) | No (lib) |
+
+**Clone command used:**
+```bash
+git clone --depth 1 --recurse-submodules https://github.com/code-423n4/2026-04-monetrix.git
+```
+
+**Local snapshot:** `bounty-notes/monetrix/sources/` (mirrors `src/` tree)
+
+---
+
+## 3. Audit Coverage Map
+
+**No prior audits.** This is the first audit of Monetrix.
+
+**Baseline intel sources:**
+
+| Source | Status | Use |
+|---|---|---|
+| V12 (Zellic AI) run 2147 | **OOS findings** — dup-check source | Pattern L grep before PoC |
+| Dev-written PoC tests in `test/` | OOS (not in scope) | Pattern Q dev-aware boundary telegraph |
+| Ethena audits (public) | Reference | Analogue protocol — compare for adapted patterns |
+| Hyperliquid docs | Reference | Precompile semantics, HLP lock mechanics |
+| hyper-evm-lib README | Reference | Precompile start-of-block semantics |
+
+---
+
+## 4. Research Priority Queue
+
+### Tier 1 — Highest leverage (dig here first)
+
+| # | Target | Rationale | Est. effort |
+|---|---|---|---|
+| T1.1 | `MonetrixAccountant.sol` — 4-gate settle pipeline | README HIGHEST PRIORITY; composite temporal/stale issues most likely | 2 days |
+| T1.2 | `MonetrixVault.sol` — deposit/redeem/keeperBridge/bridgeYieldFromL1/distributeYield | Largest surface; bank-run + same-block staleness composites | 2-3 days |
+| T1.3 | `PrecompileReader.sol` + `TokenMath.sol` | EVM↔L1 unit boundary; decimal DoS on whitelist edge | 1 day |
+
+### Tier 2 — Secondary
+
+| # | Target | Rationale | Est. effort |
+|---|---|---|---|
+| T2.1 | `sUSDM.sol` — cooldownShares/cooldownAssets/claimUnstake | ERC-4626 + physical-isolation escrow; dev wrote strict rate tests | 1 day |
+| T2.2 | `ActionEncoder.sol` | Wire format correctness; dev wrote `ActionEncoderBoundCheck.t.sol` → saturated | 0.5 day |
+| T2.3 | `MonetrixConfig.sol` | Whitelist invariants; perpToSpot mappings | 0.5 day |
+
+### Tier 3 — Lowest leverage (skip unless hypothesis demands)
+
+| # | Target | Rationale |
+|---|---|---|
+| T3.1 | `RedeemEscrow.sol` | Very small, simple; INV-3a/3b well-documented |
+| T3.2 | `YieldEscrow.sol` | 34 nSLoC; trivial pull pattern |
+| T3.3 | `InsuranceFund.sol` | 38 nSLoC; trivial deposit/withdraw |
+| T3.4 | `sUSDMEscrow.sol` | 25 nSLoC; immutable bindings, onlySUSDM |
+| T3.5 | `USDM.sol` | 48 nSLoC; standard ERC-20 + onlyVault mint/burn |
+| T3.6 | `MonetrixAccessController.sol` + `MonetrixGovernedUpgradeable.sol` | Standard UUPS + AccessControl |
+| T3.7 | All `interfaces/` | Pure interface declarations |
+
+---
+
+## 5. Research Status Matrix
+
+Legend: 🔴 unstarted · 🟡 in-progress · 🟢 complete · ⚫ killed · ❌ dup · 💎 submitted
+
+| Target | H1 | H2 | H3 | H4 | H5 | H6 | H7 | H8 | H9 | H10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Accountant | 🔴 | 🔴 | | 🔴 | | | 🔴 | | 🔴 | |
+| Vault | 🔴 | | 🔴 | | | | 🔴 | 🔴 | | |
+| PrecompileReader | 🔴 | 🔴 | | | ⚫ | 🔴 | | | | |
+| TokenMath | 🔴 | | | | ⚫ | 🔴 | | | | |
+| sUSDM | | | 🔴 | | | | | | | 🔴 |
+
+(H1-H10 mapping → see section 10 and `hypothesis-shortlist.md`)
+
+---
+
+## 6. Known Issues & Exclusions
+
+### Explicitly publicly known (OOS per README)
+
+1. **Operator compromise or inaction** = OOS
+2. **UPGRADER single-role over 9 proxies** = OOS
+3. **Parameters not final** — pre-deployment adjustable
+
+### V12-found issues (OOS, pending paste)
+
+- **Placeholder**: awaiting user paste of V12 run 2147 findings
+- All V12 issues judged out of scope
+- **BLOCK**: no Phase 2 PoC commit until V12 list available for Pattern L dup-check
+
+### Dev-test-covered lanes (Pattern Q HARD KILL if exact match)
+
+(See `scope-official.md` section "Pattern Q intel" — 15 dev-written PoC/strict/fuzz test files)
+
+### Judging rules
+
+- H/M downgraded to Low → ineligible
+- Low upgraded to H/M → unsupported
+- Select risk carefully at submission
+
+---
+
+## 7. Submission Gate Pre-Check
+
+Before ANY submission, validate ALL:
+
+- [ ] **Gate 1 (Scope)**: finding is in one of the 20 in-scope .sol files
+- [ ] **Gate 2 (Caller-constraint)**: exploit does NOT require Operator compromise
+- [ ] **Gate 3 (Validity)**: root cause traced to specific file:line; not speculative
+- [ ] **Gate 4 (Impact)**: severity selected conservatively (H or M, never Low expecting upgrade)
+- [ ] **Gate 4.5 (Pattern L)**: narrow-phrase grep vs V12 run 2147 → no match
+- [ ] **Gate 4.5b (Pattern Q)**: not a dev-test success-case scenario
+- [ ] **Gate 5 (Anti-slop)**: bounty-lessons v2.3 45-FP patterns pass
+- [ ] **Gate 5.5 (N/A for EVM)**: security.txt skip (Solana-only gate)
+- [ ] **Gate 6 (Deployment-State)**: HyperEVM mainnet deployment status confirmed N/A (pre-launch contest)
+- [ ] **PoC**: runnable in `test/c4/C4Submission.t.sol::test_submissionValidity`; `forge test --match-path "test/c4/C4Submission.t.sol" -vvv` passes
+- [ ] **Report**: verbatim quotes from code + README; no paraphrasing of judging-critical text
+
+---
+
+## 8. Session Log
+
+| Session | Date | Focus | Outcome |
+|---|---|---|---|
+| 0 | 2026-04-25 | Phase 0 scope + MFD + hypothesis seed | 20 files mapped, H1-H10 shortlisted, V12 paste pending |
+
+---
+
+## 9. Next Session Handoff
+
+**Entering Session 1 (when next resumed):**
+
+1. **Resume from:** `bounty-notes/monetrix/monetrix-research-mapping.md` (this file)
+2. **Re-read:** `hypothesis-shortlist.md` + `scope-official.md`
+3. **Pre-check:**
+   - [ ] Has user pasted V12 findings? If yes → Pattern L grep per H1-H10
+   - [ ] Any new commits to `code-423n4/2026-04-monetrix` since last session?
+   - [ ] bounty page scope/rules unchanged? (Pattern O Phase -1 check)
+4. **Next target**: H1 (same-block precompile staleness) OR H6 (decimal DoS settle grief) — whichever user chose
+5. **PoC framework**: `test/c4/C4Submission.t.sol::test_submissionValidity`
+
+**Pipeline context:**
+
+- Monetrix runs parallel with Kamino T1P2 after XRPL Sherlock closes (Apr 27 20:00 UTC)
+- Budget: 9 days remaining, soft cap ~6 days for research + 2 days for PoC/report polish + 1 day buffer
+- base-azul F2 already submitted (Report 74730 awaiting triage)
+
+---
+
+## 10. Quick Reference
+
+### File map (ranked by LoC)
+
+```
+627  MonetrixVault.sol           ← T1.2 main attack surface
+345  MonetrixAccountant.sol      ← T1.1 HIGHEST PRIORITY
+330  sUSDM.sol                   ← T2.1 ERC-4626 cooldown
+219  MonetrixConfig.sol          ← T2.3 whitelist invariants
+199  ActionEncoder.sol           ← T2.2 wire format
+172  PrecompileReader.sol        ← T1.3 L1 read + decimal
+ 98  TokenMath.sol               ← T1.3 decimal conv
+ 82  RedeemEscrow.sol            ← T3.1
+ 74  USDM.sol                    ← T3.5
+ 70  MonetrixGovernedUpgradeable.sol  ← T3.6
+ 70  MonetrixAccessController.sol ← T3.6
+ 55  InsuranceFund.sol           ← T3.3
+ 54  YieldEscrow.sol             ← T3.2
+ 41  sUSDMEscrow.sol             ← T3.4
+```
+
+### Invariant map (README)
+
+| INV | Statement | File:Line |
+|---|---|---|
+| INV-1 | `totalBackingSigned() ≥ int256(totalSupply())` soft | Accountant.sol:117 |
+| INV-2 | sUSDM rate monotone non-decreasing | sUSDM.sol:102,234 |
+| INV-3 | RedeemEscrow.totalOwed tracks unclaimed | RedeemEscrow.sol |
+| INV-3a | payOut reverts if balance < amount | RedeemEscrow.sol:49 |
+| INV-3b | reclaimTo guards totalOwed | RedeemEscrow.sol:62 |
+| INV-4 | USDM.balanceOf(sUSDMEscrow) == totalPendingClaims | sUSDM.sol:171-172,202-203,227-228 |
+| INV-5 | Gate 1 initialization | Accountant.sol:206,312-314 |
+| INV-6 | Gate 2 interval | Accountant.sol:209 |
+| INV-7 | Gate 3 distributable cap | Accountant.sol:213-215,187 |
+| INV-8 | Gate 4 annualized APR cap | Accountant.sol:217-221, Config.sol:56,151-156,88 |
+| INV-9 | Σ yield ≤ Σ surplus | Accountant.sol:62,224 |
+| INV-10 | USDM mint/burn onlyVault | USDM.sol:22,46,53 |
+| INV-11 | sUSDM.injectYield onlyVault | sUSDM.sol:79,234 |
+| INV-12 | Escrow movements onlyVault / onlySUSDM | Various |
+| INV-13 | Accountant.settle / notifyVaultSupply onlyVault | Accountant.sol:46,202,250 |
+
+### Test commands
+
+```bash
+# Build
+forge build
+
+# Run PoC (required for submission)
+forge test --match-path "test/c4/C4Submission.t.sol" -vvv
+
+# Run all non-fork
+forge test -vvv
+
+# Fork tests (needs RPC)
+export FOUNDRY_ETH_RPC_URL=https://rpc.hyperliquid-testnet.xyz/evm
+forge test --match-path "test/MonetrixFork.t.sol" -vvv
+```
+
+### Constants
+
+| Name | Value | File |
+|---|---|---|
+| `USDC_TOKEN_INDEX` | 0 | HyperCoreConstants.sol |
+| `SPOT_DEX` | `type(uint32).max` | HyperCoreConstants.sol |
+| `USDC_EVM_TO_L1_FACTOR` | 100 (EVM 6-dp → L1 8-dp) | TokenMath.sol |
+| `MAX_ANNUAL_YIELD_BPS_CAP` | 1500 (15% APR hard cap) | MonetrixConfig.sol |
+| Initial `maxAnnualYieldBps` | 1200 (12% APR) | MonetrixConfig.sol |
+| Default `minSettlementInterval` | 20 hours | Accountant.sol |
+| Default `redeemCooldown` | 3 days | Config initial |
+| Default `unstakeCooldown` | 3 days | Config initial |
+| Default `bridgeInterval` | 6 hours | Config initial |
+| Default `userYieldBps` | 7000 (70%) | Config initial |
+| Default `insuranceYieldBps` | 1000 (10%) | Config initial |
+| Default `foundationYieldBps` | 2000 (20%) derived | Config |
+| Default `maxYieldPerInjection` | 1,000,000e6 (1M USDM) | Config initial |
+| Default `minDepositAmount` | 100e6 (100 USDC) | Config initial |
+| Default `maxDepositAmount` | 1,000,000e6 (1M USDC) | Config initial |
+| Default `maxTVL` | 10,000,000e6 (10M USDC) | Config initial |
+| HLP lock | (read from `vaultEquity.lockedUntil`) | Hyperliquid chain constant |
+
+---
+
+## 11. Decision Framework
+
+### Hypothesis commit
+
+BEFORE drafting any Gate 4.5 Pattern L grep:
+1. Can I write 5 distinctive keywords describing hypothesis? If not → too vague, re-frame.
+2. Is hypothesis in Pattern Q dev-test lane? If yes → read that test file first. Exact scenario covered as success → HARD KILL.
+3. Is root cause traceable to `file:line`? If not → speculative, kill before grep.
+
+### Severity calibration
+
+| Scenario | Likely severity |
+|---|---|
+| User funds stolen / locked indefinitely | High |
+| Protocol-wide INV-1 permanent break | High |
+| Yield pipeline Gate bypass (inflate surplus, over-declare) | High |
+| Settle griefed / DoS'd for finite period | Medium |
+| Rate monotonicity transient break (per-tx) | Medium |
+| Rounding dust accumulation (de minimis) | QA/Low |
+| Governor/Operator-compromise dependency | OOS |
+
+### Pivot triggers
+
+Kill hypothesis immediately if:
+- Pattern L grep hits V12 findings (once pasted)
+- Pattern Q dev test covers exact scenario as success assertion
+- Root cause reduces to "Operator misbehaves" without additional code flaw
+- Severity downgrades to Low after Gate 4 analysis
+
+---
+
+## 12. Pivot Triggers
+
+### From Monetrix to another target
+
+- [ ] All H1-H10 exhausted AND no residual composite hypothesis
+- [ ] 72h straight with no fresh hypothesis
+- [ ] 3 consecutive kills in Gate 5 (anti-slop / FP pattern match)
+- [ ] Monetrix deadline < 36h remaining with no submission in pipeline → switch to polish mode
+
+### Escalation — keep on Monetrix
+
+- Any H1-H10 verified past Gate 4.5 (pre-PoC) → commit 1 day to PoC build
+- V12 list shows gap in 4-gate settle area → double down on T1.1
+- PoC fails on fork test → isolate per-block precompile mock first
+
+---
+
+## 13. Changelog
+
+| Date | Event |
+|---|---|
+| 2026-04-25 | MFD complete — scope captured, 20 files snapshotted, H1-H10 hypothesis shortlist drafted, V12 paste pending |
