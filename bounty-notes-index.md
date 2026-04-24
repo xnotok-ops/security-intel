@@ -276,9 +276,9 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** Session 4 closed Apr 20, post-mortem identified 10 unexplored angles (see kfarms-unexplored-angles.md). P1-P5 dead-zoned; Tier A queued for Session 5 (refresh_farm + slashed_amount + update_farm_config variants). 30 hypotheses killed, 0 candidates, ~3 day used.
+- **Status:** Session 5 closed Apr 24 — A1 + A3 CLOSED (8 additional hyp killed, 0 submits total across S4+S5 = 38 hyp killed). Offside 4.6 Acknowledged-status dup-killed H_A3_4 oracle hot-swap. A2 `slashed_amount` deferred to next session. SC skill tri-split v4.0 NEVER loaded across S4+S5. See findings/session-5-summary.md.
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
-- **Soft cap:** 10 hari total (Session 4 of ongoing), Tier 1 kfarms ~2.8 day remaining of 5 day cap
+- **Soft cap:** ~4d Kamino total, Session 5 spent ~4h, ~3.5d remaining for A2 + Tier B/C future sessions
 - **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
 - **Realistic target:** Medium 10K USD flat, no stake = 0 risk
 - **Parallel pipeline:** xrpl-sherlock still ACTIVE (deadline Apr 27) — Kamino primary post-XRPL
