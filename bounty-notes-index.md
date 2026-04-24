@@ -285,6 +285,8 @@ Audit a specific protocol type? Upload these files:
 
 ### Mapping Files
 
+- `findings/session-5-summary.md` (Apr 24, 2026) — Session 5 closure, A1+A3 kill log, Gate 5.5 recon results, patterns 5A/5B.
+
 - `kfarms-unexplored-angles.md` (Apr 20, 2026) — 10 post-mortem angles missed in Session 4. Tier A/B/C ranked. MANDATORY read before Session 5.
 - `kamino-session5-kickoff.md` (Apr 20, 2026) — fresh chat handoff template for Tier A audit (refresh_farm + slashed_amount + update_farm_config).
 
