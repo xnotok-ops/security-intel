@@ -1210,3 +1210,14 @@ Option A is the minimal fix if the declared error is confirmed legacy residue.
 - Status: Chief Finding, confirmed by project
 - Artifacts: bounty-notes/base-azul/findings/base-azul-pattern-p-report.md
 | SKILL-SPLIT-STRATEGY.md | claude-skills/ | Decision doc: kapan dan bagaimana split skill saat approach constraints | Consult saat YAML description > 900 chars OR SKILL.md > 1500 lines |
+
+
+## 2026-04-24 — Skill Maintenance Session 1
+
+- YAML trimmed 5 skills to ≤850 chars (batch1/solana/common/bounty-workflow/tools-reminder)
+- pending-patterns.md: appended R-V (queue 12→17), target `smart-contract-audit-evm`, migrate Session 2 v4.1
+- SKILL-SPLIT-STRATEGY.md: added section 4.6 symmetric backup rule + decision log row
+- Commits: 7 atomic (5 per-skill + 1 pending + 1 strategy)
+- Backup: `bounty-notes/claude-skills/backups/2026-04-24-trim/`
+- Release snapshot: `bounty-notes/claude-skills/releases/2026-04-24-trim/`
+
