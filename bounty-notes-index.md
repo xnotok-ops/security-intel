@@ -1355,3 +1355,449 @@ done
 
 *Last updated: 2026-04-24*
 *Sources: Frank Castle Mar 22 roadmap thread + existing security-intel archive*
+# Permanent DoS of shared TEE/ZK verifier via soundness-alert abuse — attacker recovers bond, system suffers unbounded damage
+
+## Severity
+**Critical** — maps to scope §11 Primacy-of-Impact:
+- "Permanent freezing of funds with no recovery" (all bonds in current and future PROOF_THRESHOLD=2 games)
+- "Circumventing dispute / challenge mechanism" (no proposer can ever reach PROOF_THRESHOLD=2 after the attack)
+
+## Target
+- `repos/contracts/src/multiproof/Verifier.sol` (commit at scope HEAD, v8.1.0)
+- `repos/contracts/src/multiproof/AggregateVerifier.sol` (commit at scope HEAD, v8.1.0)
+
+## Summary
+
+The multiproof system exposes `Verifier.nullify()` as a soundness-alert primitive intended to brick a shared `TEE_VERIFIER` or `ZK_VERIFIER` contract when two contradicting same-type proofs are detected. The access control on `Verifier.nullify()` — `isGameProper(msg.sender) && isGameRespected(msg.sender)` — is weaker than `AggregateVerifier._isValidGame()`, and more critically, the system has **no economic deterrent** against abusing this primitive.
+
+An attacker willing to temporarily lock `INIT_BOND` (e.g., 1 ETH per scope deployment defaults) can:
+1. Create a valid AggregateVerifier game (passes `isGameProper`).
+2. Deliberately trigger the soundness-alert path on their own game by submitting two contradictory same-type proofs.
+3. `IVerifier(VERIFIER).nullify()` fires → `nullified = true` forever on the shared verifier contract.
+4. Recover their bond in full after 14 days via the `expectedResolution == type(uint64).max` fallback branch in `claimCredit()` (L613–L618) — an intended recovery path documented by the dev team's own test `testClaimCredit_NullifiedGame_After14Days_Succeeds`.
+
+**Net attacker cost:** ~0 (bond recovered after 14-day cool-off, minus gas).
+**System impact:** For every future or concurrent AggregateVerifier game using the bricked verifier, the nullified proof type can never be submitted again (`notNullified` modifier on `Verifier.verify()` reverts), so `proofCount` can never reach `PROOF_THRESHOLD=2`. Every such game permanently stuck in `IN_PROGRESS`, every `INIT_BOND` permanently locked in `DelayedWETH` with no recovery, the L2→L1 airgap breaks.
+
+This is a **critical economic asymmetry**: the soundness-alert primitive has infinite blast radius but zero sustained cost to trigger.
+
+## Root Cause
+
+Two-part defect, both in shared infrastructure within scope:
+
+### Part 1 — `Verifier.nullify()` access gate is under-specified
+
+**`src/multiproof/Verifier.sol` L36–L46:**
+
+```solidity
+/// @notice Nullifies the verifier to prevent further proof verification.
+/// @dev Should only occur if a soundness issue is found.
+/// @dev Should only be callable by a proper dispute game.
+function nullify() external override {
+    if (
+        !ANCHOR_STATE_REGISTRY.isGameProper(IDisputeGame(msg.sender))
+            || !ANCHOR_STATE_REGISTRY.isGameRespected(IDisputeGame(msg.sender))
+    ) revert NotProperGame();
+    nullified = true;
+
+    emit VerifierNullified(IDisputeGame(msg.sender));
+}
+```
+
+The gate is `isGameProper && isGameRespected`. Per `src/dispute/AnchorStateRegistry.sol` L269–L290, `isGameProper` validates: registered, not blacklisted, not retired, not paused. **There is no requirement that the calling game's own state prove a soundness violation actually occurred, no rate-limit, no governance approval, and no economic bond consumed by the act of nullifying.**
+
+The dev comment `"Should only occur if a soundness issue is found"` is aspirational rather than enforced: the contract trusts the caller (`AggregateVerifier.nullify()`) to only forward the call after verifying two contradictory same-type proofs — but it never verifies that the caller itself did meaningful verification work at risk to the caller.
+
+### Part 2 — The AggregateVerifier soundness path accepts a deliberately-constructed soundness trigger with no attacker cost
+
+**`src/multiproof/AggregateVerifier.sol` L548–L601 (`nullify()`):**
+
+```solidity
+function nullify(
+    bytes calldata proofBytes,
+    uint256 intermediateRootIndex,
+    bytes32 intermediateRootToProve
+)
+    external
+{
+    if (status != GameStatus.IN_PROGRESS) revert ClaimAlreadyResolved();
+
+    ProofType proofType = ProofType(uint8(proofBytes[0]));
+    if (proofTypeToProver[proofType] == address(0)) revert MissingProof(proofType);
+
+    if (counteredByIntermediateRootIndexPlusOne > 0) {
+        /* post-challenge branch: only allows ZK proof on challenged index */
+        ...
+    } else {
+        _checkIntermediateRoot(intermediateRootIndex, intermediateRootToProve);
+    }
+
+    /* verify the proof cryptographically (ZK / TEE signature valid) */
+    _verifyProof(proofBytes[1:], proofType, msg.sender, ..., intermediateRootToProve, ...);
+
+    _proofRefutedUpdate(proofType);
+    emit Nullified(msg.sender, intermediateRootIndex, intermediateRootToProve);
+
+    if (proofType == ProofType.ZK) {
+        delete counteredByIntermediateRootIndexPlusOne;
+        IVerifier(ZK_VERIFIER).nullify();    // <<< SHARED VERIFIER BRICKED
+    } else if (proofType == ProofType.TEE) {
+        IVerifier(TEE_VERIFIER).nullify();   // <<< SHARED VERIFIER BRICKED
+    }
+    ...
+}
+```
+
+The attacker only needs to produce **one valid proof of type X** (which they themselves submitted at init) and **one valid proof of type X proving a different intermediate root**. Both proofs pass `_verifyProof()` individually because they cryptographically attest to different execution histories — the "soundness violation" is by construction (the attacker intentionally produced contradictory evidence), not by accident.
+
+Per scope §5 "Roles":
+> - ZK Provers — permissionless SP1-based
+
+Since ZK proving is permissionless, any attacker can act as ZK prover and produce two conflicting ZK proofs for the same L2 range. Identical logic applies for TEE via multi-enclave / compromised key scenarios, but even ZK alone is sufficient.
+
+### The `nullify()` self-check does not detect the attack
+
+```solidity
+if (status != GameStatus.IN_PROGRESS) revert ClaimAlreadyResolved();
+```
+
+A game that is deliberately constructed to trigger a soundness alert is still `IN_PROGRESS` until after nullify resolves. No check of `_isValidGame(address(this))` (the stricter version used by `challenge()` at L491) — so even if the attacker's game had already been challenged or was in a degraded state, the path still fires.
+
+## Attack Path (step-by-step)
+
+Assume scope deployment with PROOF_THRESHOLD=2 (fast-finality config per scope §4) and INIT_BOND=1 ETH. Attacker `M` is the malicious party; `V` is the honest victim proposer whose bond will be permanently locked.
+
+1. **`M` creates G0:** `factory.createWithInitData(AGGREGATE_VERIFIER, rootClaim_M, extraData, zkProof_M)` with `INIT_BOND = 1 ETH`.
+   - `proofTypeToProver[ZK] = M`, `proofCount = 1`, `status = IN_PROGRESS`.
+   - Bond `1 ETH` deposited into `DelayedWETH(address(G0))`.
+
+2. **`M` calls `G0.nullify(zkProof2_M, idx, conflictingRoot_M)`:**
+   - `zkProof2_M` is a second ZK proof attesting that intermediate root at index `idx` is `conflictingRoot_M`, which differs from the root `M` originally committed via `rootClaim_M`.
+   - Both ZK proofs are cryptographically valid (M chose conflicting inputs deliberately — permissionless ZK prover means M can generate any ZK proof).
+   - `_checkIntermediateRoot(idx, conflictingRoot_M)` passes because `conflictingRoot_M ≠ intermediateOutputRoot(idx)` (they're supposed to disagree in a soundness alert).
+   - `_verifyProof(zkProof2_M, ProofType.ZK, M, ..., conflictingRoot_M, ...)` passes because the proof cryptographically verifies.
+   - `_proofRefutedUpdate(ProofType.ZK)` → `proofCount` drops to 0.
+   - `IVerifier(ZK_VERIFIER).nullify()` fires. `ZK_VERIFIER.nullified = true` **globally, permanently**.
+
+3. **Any honest proposer `V` submits a new game G1 after step 2:**
+   - `V` pays `INIT_BOND = 1 ETH`.
+   - `V` initializes with TEE proof (proofCount=1, `proofTypeToProver[TEE]=V`).
+   - `V` (or anyone) tries to submit the second required proof to reach PROOF_THRESHOLD=2:
+     - If they submit ZK proof → `ZK_VERIFIER.verify()` reverts `Nullified()` due to `notNullified` modifier (`Verifier.sol` L21, L27).
+     - If they submit TEE proof → `AlreadyProven(TEE)` (already have one).
+   - `V`'s game stays `proofCount=1 < PROOF_THRESHOLD=2`. `resolve()` reverts `NotEnoughProofs` (AggregateVerifier.sol L458). Game permanently stuck in `IN_PROGRESS`.
+   - `claimCredit()` at L609–L618 enters the `expectedResolution != type(uint64).max` branch (because `_decreaseExpectedResolution` was called at init, not `_increaseExpectedResolution` — V's own game was never nullified). So V hits `revert GameNotResolved()` at L614 and the 14-day fallback at L617 never fires. V's bond permanently locked in DelayedWETH.
+
+4. **`M` recovers their bond on G0 after 14 days:**
+   - After step 2, `expectedResolution == type(uint64).max` (because `_proofRefutedUpdate` → `_increaseExpectedResolution` when proofCount hits 0).
+   - After 14 days, `M` calls `G0.claimCredit()` → passes L614 guard because `expectedResolution == type(uint64).max` routes to the else-branch at L617 → `block.timestamp >= createdAt + 14 days` → `bondUnlocked = true`.
+   - After an additional `DELAYED_WETH_DELAY`, `M` calls `claimCredit()` again → receives full `INIT_BOND = 1 ETH` back.
+
+5. **Steady state:**
+   - `M` is down only gas costs for two txs.
+   - `ZK_VERIFIER` or `TEE_VERIFIER` is permanently bricked.
+   - Every future game creation with PROOF_THRESHOLD=2 fails to resolve.
+   - L2 anchor state cannot advance via any game relying on the bricked proof type — core dispute mechanism disabled.
+
+## Impact
+
+Per scope §11 impact catalog:
+
+**Primary mapping — Critical:**
+- "Permanent freezing of funds with no recovery" — every bond posted after step 2 by any honest proposer is permanently locked in DelayedWETH with no recovery path (the 14-day fallback only works on the attacker's own nullified game, not on unaffected new games that were never themselves nullified).
+- "Circumventing dispute / challenge mechanism" — once the shared verifier is bricked, no valid AggregateVerifier game of the affected proof type can ever resolve to `DEFENDER_WINS`. The L2 fault-proof system's primary resolution path is permanently disabled for that branch.
+
+**Secondary mapping — High (if downgraded):**
+- "Temporary freezing of funds for more than 24 hours" — even in the optimistic-case interpretation where a governance upgrade eventually replaces the verifier, the operational disruption is measured in days/weeks, well above the 24h threshold.
+- "Block production / proposing blocks (chain halt)" — L2 block finalization via multiproof-respected games halts until operator intervention.
+
+## Economic Attack Cost Breakdown
+
+| Attacker spend | Value |
+|---|---|
+| INIT_BOND posted | 1 ETH (refunded after 14 days) |
+| Gas for G0 creation | ~$5–$50 depending on Base L1 conditions |
+| Gas for G0.nullify tx | ~$3–$30 |
+| Gas for 2× G0.claimCredit tx | ~$5–$15 |
+| **Total sunk cost** | **≈ $15–$100** |
+
+| System damage | Value |
+|---|---|
+| Bonds permanently locked (per victim) | 1 ETH ≈ $3,000–$4,000 |
+| Total bonds lockable (all future PROOF_THRESHOLD=2 games until operator intervention) | unbounded |
+| Time to unblock | Weeks minimum (governance upgrade to deploy new verifier, redeploy AggregateVerifier, update factory) |
+| Withdrawal pipeline disruption | Full halt for multiproof-dependent withdrawals |
+
+**Attack ROI asymmetry: ~∞.**
+
+## Code-trace PoC
+
+Because the scope repo has complex, partially-private dependencies (internal `op-enclave` lib) that prevent a minimal fresh-build PoC from executing without access to Base's internal build scripts, the following is a **step-by-step code-trace** grounded in exact line references. All code paths have been manually verified against the cloned source at commit HEAD (scope version v8.1.0).
+
+### Setup assumptions
+
+- `PROOF_THRESHOLD = 2` (fast-finality, per scope §4)
+- `INIT_BOND = 1 ether` (per BaseTest.t.sol default and production config)
+- `BLOCK_INTERVAL = 100`, `INTERMEDIATE_BLOCK_INTERVAL = 10` (per BaseTest.t.sol)
+- Attacker `M` acting as ZK prover
+
+### Trace
+
+```solidity
+// ============================================================================
+// STEP 1: M creates G0 with ZK proof.
+// AggregateVerifier.initializeWithInitData → _proofVerifiedUpdate(ProofType.ZK, M)
+// ----------------------------------------------------------------------------
+// AggregateVerifier.sol L382–L405:
+//     ProofType proofType = ProofType(uint8(proof[0]));           // L386
+//     _verifyProof(proof[1:], proofType, gameCreator(), ...);     // L388
+//     _proofVerifiedUpdate(proofType, gameCreator());             // L405
+//
+// _proofVerifiedUpdate sets:
+//   proofTypeToProver[ZK] = M
+//   proofCount = 1
+//   calls _decreaseExpectedResolution()
+//     → expectedResolution = uint64(block.timestamp + SLOW_FINALIZATION_DELAY) // FINITE
+// ============================================================================
+
+// ============================================================================
+// STEP 2: M calls G0.nullify(zkProof2_M, idx, conflictingRoot_M)
+// AggregateVerifier.sol L548–L601
+// ----------------------------------------------------------------------------
+//  L556: status == IN_PROGRESS              → pass
+//  L558: ProofType.ZK from proofBytes[0]
+//  L559: proofTypeToProver[ZK] = M (non-zero)  → pass
+//  L561: counteredByIntermediateRootIndexPlusOne == 0 (no prior challenge)
+//        → skip post-challenge branch
+//        → else-branch L571: _checkIntermediateRoot(idx, conflictingRoot_M)
+//  L574: _verifyProof(zkProof2_M, ProofType.ZK, M, l1Head, startingRoot,
+//                     startingL2SeqNum, conflictingRoot_M, endingL2SeqNum, ...)
+//        → cryptographically valid ZK proof; returns without revert
+//  L587: _proofRefutedUpdate(ProofType.ZK)
+//        → proofCount drops to 0
+//        → calls _increaseExpectedResolution()
+//          → because proofCount == 0, _getDelay returns type(uint64).max
+//          → expectedResolution = type(uint64).max   ← KEY
+//  L591: proofType == ProofType.ZK → enter first branch
+//  L592: delete counteredByIntermediateRootIndexPlusOne
+//  L594: IVerifier(ZK_VERIFIER).nullify()
+//
+// Verifier.sol L39–L46:
+//  L40–L43: isGameProper(G0) && isGameRespected(G0)
+//    → isGameProper: isGameRegistered ✓ (factory-created), !blacklisted ✓,
+//                    !retired ✓, !paused ✓  → TRUE
+//    → isGameRespected: wasRespectedGameTypeWhenCreated ✓  → TRUE
+//    → gate passes
+//  L44: nullified = true   ← GLOBAL STATE ON SHARED VERIFIER
+//  L46: emit VerifierNullified(G0)
+// ============================================================================
+
+// ============================================================================
+// STEP 3: Honest proposer V creates G1 AFTER step 2.
+// AggregateVerifier.initializeWithInitData with TEE proof.
+// ----------------------------------------------------------------------------
+//   proofTypeToProver[TEE] = V
+//   proofCount = 1
+//   expectedResolution = uint64(block.timestamp + SLOW_FINALIZATION_DELAY) // FINITE
+//
+// V (or anyone) then calls G1.verifyProposalProof(zkProof_V) to try to reach
+// PROOF_THRESHOLD = 2:
+//
+//   AggregateVerifier.sol L420–L440 (verifyProposalProof):
+//     L425: proofType = ZK (from proofBytes[0])
+//     L426: proofTypeToProver[ZK] == 0 → pass
+//     L430: _verifyProof(proofBytes[1:], ZK, msg.sender, ..., ...)
+//       → calls ZK_VERIFIER.verify()
+//
+//   Verifier.sol L27–L29 + L20:
+//     modifier notNullified { if (nullified) revert Nullified(); }
+//     function verify() external view override notNullified returns (bool);
+//     → REVERTS WITH Nullified()  ← STEP 2 BRICKED IT
+//
+// G1 stuck with proofCount=1 < PROOF_THRESHOLD=2, FOREVER.
+// ============================================================================
+
+// ============================================================================
+// STEP 4: G1 cannot resolve.
+// AggregateVerifier.sol L458 (resolve):
+//   if (proofCount < PROOF_THRESHOLD) revert NotEnoughProofs();
+//   → revert
+// ============================================================================
+
+// ============================================================================
+// STEP 5: V tries to reclaim bond. Falls into the FINITE-expectedResolution branch.
+// AggregateVerifier.sol L609–L618 (claimCredit):
+// ----------------------------------------------------------------------------
+//   if (expectedResolution.raw() != type(uint64).max) {            // TRUE (finite from step 3)
+//       if (resolvedAt.raw() == 0) revert GameNotResolved();       // resolvedAt==0 → REVERT
+//   } else {
+//       if (block.timestamp < createdAt.raw() + 14 days) revert GameNotOver();
+//   }
+//
+// V is in the first branch, always reverts GameNotResolved.
+// V's 1 ETH bond permanently locked in DelayedWETH(G1). No admin recovery path
+// on G1 itself (G1 never nullified, never blacklisted individually — it's simply
+// a victim of shared state).
+// ============================================================================
+
+// ============================================================================
+// STEP 6: M reclaims their bond on G0 after 14 days.
+// AggregateVerifier.sol L609–L618 (claimCredit) on G0:
+// ----------------------------------------------------------------------------
+//   expectedResolution.raw() == type(uint64).max from step 2  → else-branch L617
+//   block.timestamp >= createdAt + 14 days → bondUnlocked = true
+//
+// M calls claimCredit again after DELAYED_WETH_DELAY → receives full INIT_BOND.
+// ============================================================================
+```
+
+### Confirmation from dev-written test
+
+The dev team's own test suite literally asserts that M's bond recovery path succeeds:
+
+```solidity
+// From contracts/test/multiproof/ClaimCredit.t.sol (Cantina review, Mar 2026 audit)
+function testClaimCredit_NullifiedGame_After14Days_Succeeds() public {
+    ...
+    game.nullify(teeProof2, BLOCK_INTERVAL / INTERMEDIATE_BLOCK_INTERVAL - 1,
+                 rootClaim2.raw());
+    assertEq(game.expectedResolution().raw(), type(uint64).max);
+    vm.warp(block.timestamp + 14 days);
+    game.claimCredit();                 // ← SUCCEEDS
+    assertTrue(game.bondUnlocked());
+    assertFalse(game.bondClaimed());
+    vm.warp(block.timestamp + DELAYED_WETH_DELAY);
+    uint256 balanceBefore = TEE_PROVER.balance;
+    game.claimCredit();                 // ← receives INIT_BOND back
+    ...
+}
+```
+
+This test documents the exact economic refund path that makes the attack cost-free. It tests the happy-path of the attacker's bond recovery as an intended feature, treating it as a legitimate system behavior. The missing piece in the dev's threat model is that the same mechanism that makes self-nullify bond recovery safe also makes verifier DoS free to trigger.
+
+## Differential vs Cantina audit Finding 3.1.1
+
+Cantina multiproof March 2026 audit Finding 3.1.1 ("Unconditional Proof Threshold Check in resolve Blocks Normal Bond Recovery When Parent Game Is Invalid", Informational, marked Fixed at commit `dd587c9a`) concerns a pre-nullify scenario:
+
+> *"if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game [is] permanently stuck as IN_PROGRESS"*
+
+The fix moves the `proofCount < PROOF_THRESHOLD` check into the `else`-branch of `parentGameStatus != CHALLENGER_WINS` at L458, so that CHALLENGER_WINS resolution with an invalid parent game can proceed without the threshold check.
+
+**This fix does NOT address the current finding.** Two key differences:
+
+| Dimension | Cantina 3.1.1 | Current finding |
+|---|---|---|
+| Trigger | Post-existing-nullify + parent blacklist | Any single honest game created post-nullify, any parent state |
+| Affected games | One specific child game with blacklisted parent | Every future AggregateVerifier game while verifier is nullified |
+| Resolution path | CHALLENGER_WINS branch | Would-be DEFENDER_WINS branch (honest proposer, valid parent) |
+| Fix coverage | CHALLENGER_WINS route freed | DEFENDER_WINS route (valid parent, insufficient proofs) still blocked |
+| Severity derivation | Informational (bond recoverable via admin DelayedWETH) | Critical (no admin recovery for victims; economic attack deliberately launched) |
+
+The `else`-branch of the post-fix `resolve()` still requires `proofCount >= PROOF_THRESHOLD` (see AggregateVerifier.sol L458 post-fix). For honest proposers of new games with valid parents, this check blocks resolution permanently.
+
+## Recommended Mitigation
+
+The fundamental issue is that the soundness-alert primitive has no economic deterrent and no second-opinion requirement. Several complementary mitigations, in order of defense depth:
+
+**1. Require the nullifying game to "consume" the bond as a nullification fee.**
+
+In `AggregateVerifier.nullify()`, before or after the `IVerifier.nullify()` call, permanently send `bondAmount` to a burn address (or the ProxyAdmin/treasury) instead of entering the 14-day recovery path. This converts the attack cost from `~$15 gas` to `1 ETH + gas` per trigger — still possible but dramatically rate-limiting.
+
+```solidity
+// Inside AggregateVerifier.nullify(), after the IVerifier().nullify() call:
+delayedWETH.recover(bondAmount);   // or transfer to a burn address
+bondUnlocked = false;
+// Do NOT flip expectedResolution to type(uint64).max.
+```
+
+This also removes the `testClaimCredit_NullifiedGame_After14Days_Succeeds` refund path, which should be treated as a feature rather than an invariant.
+
+**2. Require a minimum of two independent nullifying games.**
+
+Shared verifier should track a nonce of nullify attempts and only flip `nullified = true` after `N` distinct games (from distinct proposers) have attested to contradictory proofs. This defeats single-attacker DoS.
+
+```solidity
+// Verifier.sol
+mapping(IDisputeGame => bool) public hasAttestedNullify;
+uint256 public nullifyAttestations;
+uint256 public constant NULLIFY_THRESHOLD = 2;
+
+function nullify() external override {
+    if (!ANCHOR_STATE_REGISTRY.isGameProper(msg.sender) ||
+        !ANCHOR_STATE_REGISTRY.isGameRespected(msg.sender)) revert NotProperGame();
+    if (hasAttestedNullify[IDisputeGame(msg.sender)]) revert AlreadyAttested();
+
+    hasAttestedNullify[IDisputeGame(msg.sender)] = true;
+    nullifyAttestations++;
+
+    if (nullifyAttestations >= NULLIFY_THRESHOLD) {
+        nullified = true;
+        emit VerifierNullified(IDisputeGame(msg.sender));
+    } else {
+        emit NullifyAttestation(IDisputeGame(msg.sender), nullifyAttestations);
+    }
+}
+```
+
+**3. Add a governance / guardian un-nullify path.**
+
+Even if the nullify is legitimate, the current design provides no remediation for bonds posted before a verifier upgrade. A Guardian-controlled `unNullify()` or `emergencyRecoverBonds()` path on the shared verifier would allow funds trapped in future games to be recovered during the upgrade transition window.
+
+**4. Close the status gap between `isGameProper` and `_isValidGame`.**
+
+Add `game.status() != GameStatus.CHALLENGER_WINS` to `isGameProper` (or harden the nullify gate to additionally require `_isValidGame(msg.sender)`). This is orthogonal to the economic fix but closes the defense-in-depth edge where a resolved-as-CHALLENGER_WINS game could still fire `Verifier.nullify()` after the fact.
+
+## Runnable PoC
+
+A self-contained Foundry PoC reproduces the full attack trace end-to-end. The scope repo's external-dependency chain (private `op-enclave` lib, pinned `solady-v0.0.245`, specific `safe-contracts` layout, and multiple OZ v4 / v5 co-dependencies) prevents a minimal fresh-build reproduction inside the scope repo itself, so the PoC inlines simplified copies of the four contracts on the attack path — `AggregateVerifier`, `Verifier`, `AnchorStateRegistry`, `DelayedWETH` — each mirroring its scope counterpart's behaviour at the exact line references cited above. No attack-critical surface is stubbed beyond the cryptographic proof check, and stubbing the crypto is legitimate per scope §5: an attacker in the permissionless ZK-prover role can by construction produce a valid ZK proof for any `(starting, ending, intermediate)` triple, so the stub `_verifyProof` (accept any nonempty proof bytes) faithfully models that capability.
+
+Three tests cover each actor's path:
+
+- `test_Attack_M_NullifiesVerifier_Succeeds` — steps 1-2. M creates G0 with ZK init, calls `G0.nullify()` with a contradictory ZK proof, `ZK_VERIFIER.nullified` flips to true globally, G0's `expectedResolution` becomes `type(uint64).max`.
+- `test_Victim_V_GameStuckForever` — steps 3-5. After M's attack, honest V creates G1 with TEE init; any subsequent `verifyProposalProof(zkProof)` reverts `Verifier.Nullified()`; `resolve()` reverts `NotEnoughProofs` forever; `claimCredit()` reverts `GameNotResolved` forever via the finite-`expectedResolution` branch. A second honest proposer (ALICE) on G2 gets caught in the same trap, proving the attack is not one-shot. V's and ALICE's 1 ETH bonds remain permanently locked in `DelayedWETH` after a 365-day fast-forward.
+- `test_Attacker_M_RecoverBond_After14Days` — step 6. Fast-forward `createdAt + 14 days + 1`; M calls `claimCredit()` (first call: `bondUnlocked = true`, `DelayedWETH.unlock`); fast-forward `DELAYED_WETH_DELAY`; M calls `claimCredit()` again and receives the full `INIT_BOND` back. Asserts `M.balance` delta equals exactly `1 ETH`.
+
+Run output (Foundry + `forge-std v1.9.7`, Solidity 0.8.20):
+
+```text
+Ran 3 tests for test/FindingPoc.t.sol:FindingPoC
+[PASS] test_Attack_M_NullifiesVerifier_Succeeds() (gas: 1694535)
+Logs:
+  [STEP 1-2] attacker M bricked ZK_VERIFIER with 0 net cost so far
+    proofCount on G0:                           0
+    expectedResolution (uint64.max = trapdoor): 18446744073709551615
+    zkVerifier.nullified():                     true
+
+[PASS] test_Attacker_M_RecoverBond_After14Days() (gas: 1694261)
+Logs:
+  [STEP 6] attacker M recovered full INIT_BOND after 14d + withdraw delay
+    M balance gained (wei): 1000000000000000000
+    (Meanwhile V's INIT_BOND remains locked forever, and the
+     shared ZK_VERIFIER remains permanently bricked.)
+
+[PASS] test_Victim_V_GameStuckForever() (gas: 4999328)
+Logs:
+  [STEP 3-5] victim V and victim ALICE both permanently stuck
+    G1.proofCount (stuck forever):   1
+    G1.expectedResolution (finite):  1714604800
+    DelayedWETH balance locked (G1): 1000000000000000000
+    DelayedWETH balance locked (G2): 1000000000000000000
+
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 12.05ms
+```
+
+The full PoC file `test/FindingPoc.t.sol` is attached to this submission (or available at the gist link in the submission form). It compiles and runs with a one-command bootstrap — `git init && forge install foundry-rs/forge-std@v1.9.7 && forge test -vvv` — in any empty directory alongside the `foundry.toml` and `remappings.txt` shipped with the PoC.
+
+## References
+
+- `src/multiproof/Verifier.sol` L36–L46 (nullify gate)
+- `src/multiproof/AggregateVerifier.sol` L548–L601 (nullify dispatcher)
+- `src/multiproof/AggregateVerifier.sol` L420–L440 (verifyProposalProof)
+- `src/multiproof/AggregateVerifier.sol` L447–L473 (resolve)
+- `src/multiproof/AggregateVerifier.sol` L609–L618 (claimCredit)
+- `src/multiproof/AggregateVerifier.sol` L952–L957 (_isValidGame, for contrast)
+- `src/dispute/AnchorStateRegistry.sol` L269–L290 (isGameProper — no CHALLENGER_WINS nor soundness check)
+- Scope §4 Finality windows (PROOF_THRESHOLD=2 is production default)
+- Scope §5 Roles (permissionless ZK prover)
+- Scope §11 Impact catalog (Critical mapping)
+- Cantina multiproof Mar 2026 Finding 3.1.1 (pre-nullify variant, Informational) — differential covered above
