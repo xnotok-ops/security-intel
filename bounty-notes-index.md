@@ -276,7 +276,7 @@ Audit a specific protocol type? Upload these files:
 
 ## Kamino Immunefi
 
-- **Status:** Session 5 closed Apr 24 — A1 + A3 CLOSED (8 additional hyp killed, 0 submits total across S4+S5 = 38 hyp killed). Offside 4.6 Acknowledged-status dup-killed H_A3_4 oracle hot-swap. A2 `slashed_amount` deferred to next session. SC skill tri-split v4.0 NEVER loaded across S4+S5. See findings/session-5-summary.md.
+- **Status:** Session 5 closed Apr 24 — Tier A fully exhausted (A1+A2+A3 CLOSED, 13 additional hyp killed, 0 submits). Offside 4.6 dup-killed H_A3_4 oracle hot-swap. Gate 6 deployment check on A2: 476/478 farms locking=None, 2/478 penalty=0bps (slash config-dormant). SC skill tri-split v4.0 NEVER loaded across S4+S5 (43 hyp killed total, 0 submits). ~4.5h spent, ~3d Kamino budget remaining. Next: Tier B/C pivot or program swap. See findings/session-5-summary.md.
 - **Bounty:** 1.5M USD rolling, 150K Critical floor, Medium flat 10K, no stake, KYC done
 - **Soft cap:** ~4d Kamino total, Session 5 spent ~4h, ~3.5d remaining for A2 + Tier B/C future sessions
 - **Dup-check command:** `grep -r -i "phrase" bounty-notes/kamino/audits-local/[component]/*.txt`
