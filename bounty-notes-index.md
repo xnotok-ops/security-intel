@@ -1221,3 +1221,17 @@ Option A is the minimal fix if the declared error is confirmed legacy residue.
 - Backup: `bounty-notes/claude-skills/backups/2026-04-24-trim/`
 - Release snapshot: `bounty-notes/claude-skills/releases/2026-04-24-trim/`
 
+
+## 2026-04-24 — Skill Maintenance Session 2 (v4.1 release)
+
+- Migrated 17 patterns (A-V) from pending queue to 6 skill bodies
+- smart-contract-audit-evm: +9 patterns (A,B,C,E,R,S,T,U,V)
+- smart-contract-audit-common: +2 patterns (D,K)
+- bounty-workflow: +4 patterns (G,L full promotion,O,Q)
+- bounty-lessons: +1 pattern (Q Gate 3 extension)
+- security-research: +1 pattern (F GraphQL)
+- batch1-patterns-apr2026: +1 pattern (P as new xrpl-audit-patterns.md reference)
+- Queue cleared 17→0, collecting for v4.2 mid-to-late May 2026
+- Release snapshot: `bounty-notes/claude-skills/releases/2026-04-24-v4.1/`
+- Backup: `bounty-notes/claude-skills/backups/2026-04-24-v4.1-premigration/`
+- Commits: 8 atomic (6 per-skill + 1 pending + 1 release note)
