@@ -2224,3 +2224,148 @@ Kill hypothesis immediately if:
 - Pick supplied notional s.t. `real_surplus < Gate_4_cap` so Gate 3 binds (single-cycle demo)
 - Pick supplied notional s.t. `real_surplus > Gate_4_cap` if demonstrating duration extension (multi-cycle demo)
 - For HIGH severity: even small per-cycle delta is OK, as long as ratio (2x or N+1) is preserved and exploit is repeatable
+# Monetrix — Session 3 Log
+
+**Date:** 2026-04-25 (post-H9-v2-submit, post-2h-edit-lock)
+**Focus:** H1 verification + backup-slot decision
+**Outcome:** H1 hard-killed; Option 3 (leave slot empty) selected
+**Duration:** ~3h research + artifact write
+
+---
+
+## 1. Pre-flight
+
+| Check | Status | Notes |
+|---|---|---|
+| H9-v2 submission lock | ✅ saved (per user) | 2h edit window expired ~7:22 AM SGT |
+| Conversation recall | ✅ | H9-v2 + H1 thesis context recovered |
+| Pattern O (`code-423n4/2026-04-monetrix` commits since clone) | ✅ clean | `git log origin/main ^HEAD` empty output |
+| Budget remaining | ✅ ~9d 21h to deadline May 4 20:00 UTC | Well under soft cap |
+| V12 Pattern L | ⚠️ not run | V12 paste still pending; not blocking since H1 killed pre-V12 |
+
+---
+
+## 2. H1 — HARD KILL via Pattern Q (BridgeAsync.t.sol)
+
+### Original thesis (Session 0/1 carryover)
+
+`hyper-evm-lib` README L77: "precompiles return data from the start of the block, so CoreWriter actions will not be reflected in precompile data until next call."
+
+Hypothesis: `MonetrixAccountant.totalBackingSigned()` mixes EVM-live (`usdc.balanceOf`) and L1-stale (`PrecompileReader.*`) reads. If an Operator-callable action causes EVM-live to update but L1-stale to lag in same block, settle could read inflated backing and mint phantom yield.
+
+### Pattern Q evidence (KILL)
+
+Dev test `test/simulator/BridgeAsync.t.sol::test_emergencyBridge_async_settlesOnNextBlock` (lines 50–74) explicitly asserts the L1→EVM bridge async semantics as INTENDED design. Three assertions in same block as `emergencyBridgePrincipalFromL1(amount)`:
+
+1. `vault.outstandingL1Principal()` decremented immediately (internal counter only)
+2. `usdc.balanceOf(address(vault))` UNCHANGED in same block — no synchronous EVM credit
+3. `_readSpot(address(vault), USDC_TOKEN)` UNCHANGED in same block — L1 stale still shows full amount
+
+`CoreSimulatorLib.nextBlock()` is required for both sides to atomically update. **No same-block window exists where EVM-live and L1-stale disagree in a phantom-positive direction.**
+
+### Asymmetry matrix verification (full)
+
+| Operator/User call in block T | EVM live | L1 stale | Net same-block | Verdict |
+|---|---|---|---|---|
+| `keeperBridge` (EVM→L1) | -A | unchanged | -A undercount | Safe |
+| `bridgePrincipalFromL1` (L1→EVM) | unchanged | unchanged | 0 | Safe (BridgeAsync asserts) |
+| `bridgeYieldFromL1` (L1→EVM) | unchanged | unchanged | 0 | Same |
+| `emergencyBridgePrincipalFromL1` (L1→EVM) | unchanged | unchanged | 0 | Same |
+| `executeHedge` / `closeHedge` / `repairHedge` | unchanged | both stale | 0 | Symmetric L1 |
+| `depositToHLP` / `withdrawFromHLP` | unchanged | both stale | 0 | Symmetric L1 |
+| `supplyToBlp` / `withdrawFromBlp` | unchanged | both stale | 0 | Symmetric L1 |
+| `fundRedemptions` / `reclaimFromRedeemEscrow` | zero-sum (Vault↔RedeemEscrow, both counted) | unchanged | 0 | Safe |
+| `settle` (read-only call into Accountant) | live + stale, consistent | same | n/a | Safe |
+| `deposit` (user) | +A USDC + A USDM minted | unchanged | 0 surplus delta | Safe |
+| `requestRedeem` (user) | USDM transferFrom (totalOwed +A, supply unchanged until claim) | unchanged | 0 surplus delta | Safe |
+| `claimRedeem` (user) | RedeemEscrow USDC -A; USDM burn -A | unchanged | 0 surplus delta | Safe |
+
+### Composite angles tested (all dead)
+
+1. **Stale `_sendL1Bridge` guard race.** Multiple `bridge*FromL1` in same block can pass stale L1 spot >= amount each, but cumulative > L1 reality. On next-block processing, excess actions silently drop. Net: backing remains consistent across both sides.
+
+2. **Multisig vault EVM-USDC asymmetry.** `totalBackingSigned` reads `multisigVault` L1 only (no EVM USDC for multisig). All paths to multisig go Vault→coreDepositWallet→multisig-L1 (depositFor); multisig EVM USDC by design always 0. Multisig moving funds off-protocol = OOS (multisig misbehavior).
+
+3. **HLP equity drift (precompile-stale `lockedUntil` / `equity`).** Stale `eq.lockedUntil` could allow withdraw call to pass EVM check, but L1 enforces independently — silently drops if actually locked. No EVM state change.
+
+4. **Perp PnL settle-timing.** Operator timing settle around natural perp PnL volatility = mark-to-market design choice, OOS as Operator misbehavior.
+
+5. **`requestRedeem` lack of min/max.** User can grief by requesting large amount, but Operator unblocks via `fundRedemptions` + `bridgePrincipalFromL1`; no protocol drain.
+
+6. **`claimRedeem` + settle same-block.** RedeemEscrow EVM-live decrease matches USDM burn → surplus invariant preserved.
+
+### Verdict
+
+🟥 **H1 KILLED.** No phantom-positive direction in single block. No composite assembling phantom across paths.
+
+---
+
+## 3. Backup slot decision
+
+**1 slot remaining.** Three options evaluated:
+
+### Option 1 — Composite-hypothesis exploration (1-day cap)
+
+Already executed within session (3h). No composite found. Estimated additional return on more time: low (diminishing returns on already-explored surface).
+
+### Option 2 — H2 + H10 QA-batch combo
+
+- H2: `_readL1Backing` strict-revert promise vs `suppliedNotionalUsdcFromPerp` returning 0 on bal=0 → doc-code mismatch, conservative under-count not exploitable. Low/QA.
+- H10: `lastCumulativeYield = (TA*1e18)/TS` ignores virtual-shares offset — pure metric, integrators only. Info/QA. Likely covered by `sUSDMRate.t.sol` (Pattern Q hazard).
+
+Pool math: $800 QA pool ÷ N submitting wardens. Low expected payout. Submitting Low/QA when an H or M was attempted earlier risks looking like padding to judges; signal cost outweighs expected reward.
+
+### Option 3 — Leave slot empty (SELECTED)
+
+Rationale:
+- H9-v2 already submitted as HIGH; quality submission with verified PoC
+- H1 cleanly killed with documented Pattern Q rationale
+- No composite emerged in active search
+- Empty slot preserves signal-to-noise score (per C4 bot race scoring rationale)
+- Half-day saved redirected to kamino T1P2 prep post-XRPL Apr 27 triage close
+
+**Stop conditions met:** No fresh hypothesis after Phase 1 + composite search; pivot to leave-empty per mapping section 12 pivot rules.
+
+---
+
+## 4. Artifacts
+
+- `bounty-notes/monetrix/sessions/session-3-log.md` (this file)
+- `bounty-notes/monetrix/monetrix-research-mapping.md` — section 8 session-3 row + section 9 next-handoff updated
+- `bounty-notes/monetrix/hypothesis-shortlist.md` — H1 status flipped 🔴 → ⚫ KILLED with kill rationale appended
+
+No new code artifacts. PoC for H9-v2 already finalized in `/mnt/user-data/outputs/C4Submission.t.sol` (Session 2).
+
+---
+
+## 5. Next session entry point
+
+**Status at hand-off:**
+- H9-v2 SUBMITTED HIGH, edit window closed, awaiting C4 triage (typical 1–2 weeks post-deadline May 4)
+- 1 slot LEFT EMPTY by deliberate decision
+- Full 9 days of Monetrix budget unspent post-Session 3; redirected to other pipeline items
+
+**Pre-flight for next Monetrix session (if user wants to revisit):**
+
+1. C4 triage results published? Check `https://code4rena.com/audits/2026-04-monetrix` post-May 4.
+2. Any new commits to repo? Pattern O re-check.
+3. New V12 release matching Pattern L on H9-v2 keywords? (uint64, uint32, supplied, registry, double count, type mismatch, spotToken)
+4. Mitigation review opens? If H9-v2 acknowledged High, prepare for MR phase per C4 process.
+
+**Pipeline context:**
+- Monetrix in AWAITING TRIAGE (passive monitor)
+- Next active: kamino T1P2 (`transfer_ownership` ~186 LoC, queued post-XRPL Apr 27 20:00 UTC triage close)
+- Awaiting triage parallel: xrpl-sherlock (2 Med), base-azul F2 (#74730)
+- Upcoming May: SG Forge
+
+---
+
+## 6. Lessons learned
+
+1. **Dev-test Pattern Q discipline confirmed essential.** `BridgeAsync.t.sol` made the kill trivial — same-block staleness was the EXACT scenario tested as intended behavior. Reading dev-test files BEFORE thesis commit (per scope-official Pattern Q list) saves PoC-build time.
+
+2. **Asymmetric direction analysis is the right kill-frame.** Building the EVM-live × L1-stale × direction matrix made it obvious that all paths either (a) zero-sum (b) undercount (c) symmetric. No phantom-positive exists.
+
+3. **Empty-slot is a valid C4 strategy.** Signal score preservation matters when the only fallback findings are Low/QA with high noise risk. Better to ship 1 quality HIGH than 1 HIGH + 1 padding QA.
+
+4. **No-V12-paste cost minimal here.** Pattern L would only matter for Phase 2 commit. Since H1 killed at Phase 1 (Pattern Q), V12 was not the gating factor. Different from Phase 2 hypotheses where V12 grep is mandatory.
