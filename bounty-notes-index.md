@@ -2603,3 +2603,35 @@ From `bounty-notes/base-azul/claude-code-audit-2026-04-24/`:
 
 - Pattern S: AI-Auditor Lead Triage Discipline (4 validations base-azul Day 1)
 - Pattern T: Audit-Referenced Commit SHA Translation (1 validation base-azul Day 1)
+
+---
+
+# Kamino kfarms — Session 6 Final Closure (Apr 25, 2026)
+
+**Status**: CLOSED — genuine exhaustion. Both submit slots preserved unused.
+
+## Summary
+
+Session 6 closed kfarms after 8 angles (Tier B/C) + 9 sanbir findings + 17 leads. All paths terminate dead:
+- Tier B: T22 scope-OOS (Pattern X), padding dry, cooldown invariants clean, harvest design-intentional
+- Tier C: composability refresh-enforced, seed namespacing robust, compute DoS 70x headroom, set_stake admin OtterSec-covered
+- Sanbir: 9 findings — 2 forensic-shelved (decimals truncation sub-cent ceiling; set_stake overflow needs 442x stake growth), 7 dup/OOS/dead-zone. 17 leads all dead.
+
+## Pattern v4.2 contributions
+
+- **Pattern X** — Program-Scope Explicit T22 Risk Acknowledgment
+- **Pattern Y** — Default-impl vs handler-init divergence
+- **Pattern Z** — Realistic-Max-Input Severity Calibration
+
+## Distinguished from Session 4 premature parking
+
+S4 declared exhausted before SC tri-split skill loaded, before sanbir cross-validate, before Gate 6 forensic. S6 ran all three. No surviving uncertainty.
+
+## Revival triggers
+
+1. New kfarms release > v1.6.5 material to refresh / set_stake / convert_amount_to_stake
+2. Mainnet farm config deployment-state shift (warmup>0, T22-with-extensions, scope_oracle adoption)
+3. Kamino new auditor → dup-check
+4. Klend integration changes
+5. Immunefi scope text changes (T22 / fee-loss OOS clauses removed)
+
