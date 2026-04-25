@@ -2389,3 +2389,212 @@ K2 Code4rena ($135K, deadline 27 May) closed Day 15 after revival saturation.
 Claude 15-day ~90 killed hypotheses. Day 15 revival: 28 fresh hypotheses, 0 surviving.
 SC skill never loaded. Pattern Q ×5 saves cumulative. Submits 0/2 preserved unused.
 See bounty-notes/k2/day-15-log.md + CLOSED-MEMO.md for full evidence.
+# Base Azul — Deferred Findings Tracker
+
+Status: **Parked after Finding #2 submission.** Revisit these in SEPARATE sessions ONLY after #2 submitted + triage confirms received.
+
+---
+
+## Finding #3 — Permanent bond freeze post-verifier-nullification (DIFFERENT from #2)
+
+### Status: DEFERRED, was candidate for first submit but pivoted to #2 due to Gate 4.5 differential complexity
+
+### Summary
+After any AggregateVerifier game (legitimately or maliciously) triggers shared verifier nullification, EVERY subsequent AggregateVerifier game with PROOF_THRESHOLD=2 is permanently stuck IN_PROGRESS:
+- `resolve()` reverts `NotEnoughProofs` forever (proofCount ≤ 1 < PROOF_THRESHOLD=2)
+- `claimCredit()` reverts `GameNotResolved` forever (expectedResolution finite from `_decreaseExpectedResolution` at init, so 14-day fallback at L617 never fires)
+- No admin recovery for new games (they were never themselves nullified or blacklisted)
+
+### Code refs
+- `AggregateVerifier.sol` L458 — `if (proofCount < PROOF_THRESHOLD) revert NotEnoughProofs();`
+- `AggregateVerifier.sol` L609-618 — claimCredit branch logic
+- `Verifier.sol` L20, L27 — `notNullified` modifier on `verify()`
+
+### Differential vs Finding #2 (just submitted)
+- **#2 angle:** "economic DoS attack, attacker cost ~0"  
+- **#3 angle:** "downstream freeze of honest proposer bonds, regardless of nullify cause"  
+
+These are **same underlying mechanism**, different impact framings. Submit #3 only if:
+1. Immunefi returns #2 with partial-credit verdict or rejects
+2. Triage explicitly asks for separate report on the downstream-victim angle
+3. We have 24h cooldown elapsed
+
+Otherwise **skip #3** — risk of being dupped against #2 by the program team.
+
+### Differential vs Cantina Finding 3.1.1 (Informational, fixed `dd587c9a`)
+Already analyzed in detail (see transcript). 3.1.1 = pre-nullify single child stuck with blacklisted parent. #3 = post-nullify ALL future games with valid parents. Fix `dd587c9a` does NOT address #3 (else-branch still enforces `proofCount >= PROOF_THRESHOLD` at L458).
+
+### Pattern Q signal risk
+Cantina test `testClaimCredit_NullifiedGame_After14Days_Succeeds` tests the self-nullify case (proofCount drops to 0, expectedResolution flips to uint64.max, fallback works). Does NOT test the post-nullify-new-game case. Argue differential carefully.
+
+### Runnable PoC blocker
+Same as #2: scope repo has private `op-enclave` dep. Use minimal standalone Foundry project via `/tmp/base-azul-poc/` approach.
+
+### PoC outline (for future session)
+```solidity
+contract Finding3PoC {
+    function test_PermanentFreeze_NewGame_AfterGlobalNullify() public {
+        // 1. Trigger legitimate ZK_VERIFIER nullify (via any game)
+        // 2. Honest V creates new game with TEE init
+        // 3. Verify resolve() reverts NotEnoughProofs
+        // 4. Verify claimCredit() reverts GameNotResolved (finite expectedResolution branch)
+        // 5. Fast-forward 365 days — still stuck
+        // 6. Assert bond locked in DelayedWETH forever
+    }
+}
+```
+
+---
+
+## L3 — ZK-first init locks dispute path
+
+### Status: DEFERRED, medium severity at best
+
+### Summary
+`AggregateVerifier.challenge()` at L497 hard-requires `proofTypeToProver[ProofType.TEE] != address(0)`. If a game is initialized with ZK proof (permissionless per scope §5), the TEE slot stays empty. No-one can `challenge()` this game — the ZK challenger path is the ONLY dispute path, and ZK is already taken.
+
+### Code refs
+- `AggregateVerifier.sol` L497 — `if (proofTypeToProver[ProofType.TEE] == address(0)) revert MissingProof(ProofType.TEE);`
+- Scope §5 — "ZK only: 7 days — Permissionless path"
+
+### Severity issue
+- Game CAN still be `nullify()`'d via same-type-contradiction path (ZK on ZK-init game).
+- → Not a full lock of dispute, just a reduced-channels state.
+- Severity mapping struggles: "reduced functionality" is not in scope §11 catalog, closest is "Circumventing dispute/challenge mechanism" (Critical) but only partially applicable.
+- **Estimated tier: Medium ($70K) at best** — judge may argue intended design (ZK-only mode is explicitly permissionless per scope).
+
+### Gate 4.5 status
+- Pattern L: clean (no hits in Cantina or Optimism)
+- Pattern Q: not checked (no dev test covers this scenario)
+
+### PoC difficulty
+- Medium. Standalone single-file PoC feasible.
+
+### Revisit if
+- Finding #2 rejected and need additional submission
+- Research time available post-Apr 27 (after XRPL closes)
+
+---
+
+## L13 — bondRecipient race in claimCredit unlock-to-withdraw window
+
+### Status: DEFERRED, race complexity + feasibility question
+
+### Summary
+`claimCredit()` flow:
+1. First call: `bondUnlocked = true`, delayedWETH.unlock(bondRecipient, amount)
+2. Second call (after DELAYED_WETH_DELAY): delayedWETH.withdraw to bondRecipient
+
+Between the two calls, if `bondRecipient` can be flipped (e.g., via challenge resolution path), funds go to a different party than originally unlocked.
+
+### Code refs
+- `AggregateVerifier.sol` L609-640 — claimCredit dual-call pattern
+- `DelayedWETH.sol` — unlock vs withdraw timing gap (DELAYED_WETH_DELAY)
+- `AggregateVerifier.sol` L463 — `bondRecipient = proofTypeToProver[ProofType.ZK]` on CHALLENGER_WINS
+
+### Attack vector uncertainty
+- `bondRecipient` is set at `resolve()`, not at claimCredit first call. Once resolved, bondRecipient is final.
+- Race feasibility depends on whether resolve can happen AFTER first claimCredit call but BEFORE second call.
+- Preliminary analysis suggests race is NOT feasible because first claimCredit requires resolvedAt != 0, which requires resolve() already fired.
+
+### Verdict likely: INVALID on closer inspection
+- But code-level re-verification needed. Don't dismiss without reading full sequencing.
+
+### Revisit if
+- Stuck for new findings
+- After deep re-read of resolve() + claimCredit() state machine
+
+---
+
+## Finding #1 — Bond refund after proposer's own proof nullified
+
+### Status: DEFERRED, high Pattern Q invalidation risk
+
+### Summary
+When a proposer submits contradictory proofs of their own type (e.g., TEE + TEE), the system nullifies the game. The proposer (now effectively caught committing soundness violation) can recover their bond after 14 days via the `expectedResolution == type(uint64).max` fallback path. No slashing, no whistleblower reward, no economic penalty.
+
+### Pattern Q KILL SHOT
+Cantina dev-written test `testClaimCredit_NullifiedGame_After14Days_Succeeds` (audits-local L1093) literally asserts this behavior as `Succeeds` — treating the refund path as an intended feature, not a bug. Triage WILL argue:
+> "This is the documented and tested bond recovery path. The proposer posted 1 ETH bond that gets locked for 14 days as penalty for a soundness alert. This is not theft, it is a punitive delay + admin review mechanism."
+
+### Reframe angles (for revival)
+- **Angle A:** "Missing whistleblower reward" — whistleblower who catches soundness violation gets nothing despite spending gas + time; economic incentive to detect is broken.
+  - Still risky. Easy counter: "reward structure is out-of-scope design choice, not a bug."
+- **Angle B:** "No slashing for clear soundness fault" — emphasize that the 14-day delay is TOO WEAK a penalty for a proposer who demonstrably produced contradictory TEE proofs (proof of fraud).
+  - Also risky. Same OOS-design-choice counter.
+
+### Verdict
+**Likely INVALID.** Skip unless we find new angle that Cantina test doesn't cover.
+
+### Revisit ONLY if
+- Finding #2 rejected with explicit "we don't consider this an issue, try another angle"
+- Research time available AFTER XRPL closes (Apr 27) AND Kamino P2 delivered
+
+---
+
+## Other leads from Claude Code 8-agent audit (Apr 24)
+
+From `bounty-notes/base-azul/claude-code-audit-2026-04-24/`:
+
+| Lead | Summary | Status |
+|---|---|---|
+| L1 | bondRecipient flip races in claimCredit | Similar to L13, INVALID likely |
+| L2 | claimCredit does not consult ASR.isGameFinalized | DEAD — Cantina test `testClaimCredit_ParentBlacklisted_BondToCreator` covers this path succeeding |
+| L4 | Challengers post no bond → griefing | DEAD — Cantina test `testChallenge_GriefingScenario_ExtendsResolutionBy7Days` documents as intended |
+| L5 | Intermediate roots 0..N-2 unvalidated at init | Needs code verification, potentially invalid |
+| L9 | No minimum bond floor in init (1-wei grief) | Low severity, maybe worth pursuing if scope accepts Lows |
+| L10 | nullify lacks `_isValidGame(address(this))` self-check | Subset of Finding #2 (same root cause, narrower) — SKIP |
+| Others | uint64 downcasts L2 seq arithmetic, SP1 publicValues wrapping, blockhash/EIP-2935 boundary, wasRespectedGameTypeWhenCreated write-only, etc. | Need individual code-level verification before promoting to findings |
+
+---
+
+## Strategy for remaining base-azul time (10d 7h)
+
+**Day 1 (now):** Submit Finding #2 with working PoC.  
+**Day 2 (Apr 25):** After 24h cooldown, decide:
+- If #2 confirmed received + triaged as Critical → pursue next strongest candidate (likely L5 or L9)
+- If #2 downgraded / rejected → analyze feedback, potentially resubmit refined #3 or Finding #1 Angle B
+
+**Days 3-10:** Incremental findings hunt, 1 submission/day cadence (scope rate limit).
+
+**Apr 27:** XRPL Sherlock deadline elapsed, do WSL post-cleanup per plan, then full focus base-azul + Kamino P2.
+
+**May 4:** Base Azul deadline. Last-day sweeps of untouched modules (base-reth-node rust pipeline if SC work saturates).
+
+## Apr 25 Day 1 — B-pivot kill log
+
+**Outcome:** B-pivot path closed empty. All 4 sub-hypotheses dead. L379 pivot also KILLED. Slot 2/2 preserved as HARD LOCK.
+
+### L3 (ZK-first init locks dispute path)
+- **Status:** HARD KILL via Pattern L
+- **Source:** Cantina multiproof-1 finding 3.1.1 ("Unconditional Proof Threshold Check in resolve...")
+- **Fix:** dd587c9a (deployed via ddd5a09 in current HEAD)
+- **Cantina Managed:** Fix verified
+- **Per Immunefi dup rule:** fix publicly disclosed → invalid
+
+### B-pivot dd587c9a fix-completeness
+- **Status:** ALL DEAD
+- **H-1 (other fns inconsistent):** dead — proofCount threshold appears only in resolve() L458 (else branch) and _proofRefutedUpdate() L792 (sanity)
+- **H-2 (bond asymmetry):** dead — design intent matches Cantina recommendation
+- **H-3 (parent-valid + nullify):** Informational at best — same class, admin recovery exists, DT-3 hit
+- **H-4 (regression):** dead — fix deployed via ddd5a09
+
+### L379 WRITE pivot (wasRespectedGameTypeWhenCreated)
+- **Status:** HARD KILL
+- **Reason:** byte-identical to canonical FaultDisputeGameV2.sol:316-317
+- **IRI-OffbeatLabs I-03:** Informational, Acknowledged, intentional design choice — different angle (naming clarity, not WRITE correctness)
+
+### Pattern Q bonus pre-kill
+- **blockhash/EIP-2935 boundary:** dead — test/multiproof/AggregateVerifier.t.sol L317 testVerifyWithBlockhashWindow + L336 testVerifyWithEIP2935Window cover both scenarios as success cases
+
+### Remaining 8-agent leads (status: deferred, low EV)
+- uint64 downcasts L2 seq arithmetic — likely upstream OP Stack
+- SP1 publicValues wrapping — likely upstream Succinct, OOS
+- Other minor leads — individual Pattern L cycles required, expected yield ~15-20%
+
+## Final pipeline state for base-azul
+
+- Slot 1/2: F2 Critical Chief Finding (Report 74730), awaiting triage
+- Slot 2/2: HARD LOCK, no candidate passes Gate 4.5
+- Days remaining: ~9 (May 4 20:00 UTC)
+- Re-open trigger: F2 triage feedback shifts (downgrade/reject) OR explicit triage request for supplementary angle
