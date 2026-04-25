@@ -2635,3 +2635,27 @@ S4 declared exhausted before SC tri-split skill loaded, before sanbir cross-vali
 4. Klend integration changes
 5. Immunefi scope text changes (T22 / fee-loss OOS clauses removed)
 
+
+---
+
+# Kamino kfarms — Session 6 TRIPLE-VALIDATED Closure (Apr 25, 2026 — Supplement)
+
+Sec3 X-Ray ran as third audit layer post-initial-closure. 20 findings, 0 promoted. Pattern AA derived.
+
+## 3-layer convergence
+
+| Layer | Method | Findings | Promoted |
+|-------|--------|----------|----------|
+| 1 | Manual review | 8 angles | 0 |
+| 2 | Sanbir LLM-agentic | 9 + 17 leads | 0 |
+| 3 | Sec3 X-Ray LLVM-IR | 20 | 0 |
+
+**Triple-validated exhaustion.** kfarms parked. Submits 0/2 preserved.
+
+## Pattern queue v4.2 contribution (4 total)
+
+- X — Program-Scope Explicit T22 Risk Acknowledgment
+- Y — Default-impl vs handler-init divergence
+- Z — Realistic-Max-Input Severity Calibration
+- **AA (NEW)** — Internal-Helper Validation Beats Static Analyzer Anchor-Macro Check (sec3 X-Ray FP discipline, 30-60 min saved per untrustful flag)
+
