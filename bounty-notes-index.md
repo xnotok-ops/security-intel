@@ -2598,3 +2598,8 @@ From `bounty-notes/base-azul/claude-code-audit-2026-04-24/`:
 - Slot 2/2: HARD LOCK, no candidate passes Gate 4.5
 - Days remaining: ~9 (May 4 20:00 UTC)
 - Re-open trigger: F2 triage feedback shifts (downgrade/reject) OR explicit triage request for supplementary angle
+
+## v4.2 patterns queued (2026-04-25)
+
+- Pattern S: AI-Auditor Lead Triage Discipline (4 validations base-azul Day 1)
+- Pattern T: Audit-Referenced Commit SHA Translation (1 validation base-azul Day 1)
