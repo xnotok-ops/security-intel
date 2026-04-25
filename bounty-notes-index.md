@@ -2570,27 +2570,27 @@ From `bounty-notes/base-azul/claude-code-audit-2026-04-24/`:
 - **Source:** Cantina multiproof-1 finding 3.1.1 ("Unconditional Proof Threshold Check in resolve...")
 - **Fix:** dd587c9a (deployed via ddd5a09 in current HEAD)
 - **Cantina Managed:** Fix verified
-- **Per Immunefi dup rule:** fix publicly disclosed → invalid
+- **Per Immunefi dup rule:** fix publicly disclosed -> invalid
 
 ### B-pivot dd587c9a fix-completeness
 - **Status:** ALL DEAD
-- **H-1 (other fns inconsistent):** dead — proofCount threshold appears only in resolve() L458 (else branch) and _proofRefutedUpdate() L792 (sanity)
-- **H-2 (bond asymmetry):** dead — design intent matches Cantina recommendation
-- **H-3 (parent-valid + nullify):** Informational at best — same class, admin recovery exists, DT-3 hit
-- **H-4 (regression):** dead — fix deployed via ddd5a09
+- **H-1 (other fns inconsistent):** dead - proofCount threshold appears only in resolve() L458 (else branch) and _proofRefutedUpdate() L792 (sanity)
+- **H-2 (bond asymmetry):** dead - design intent matches Cantina recommendation
+- **H-3 (parent-valid + nullify):** Informational at best - same class, admin recovery exists, DT-3 hit
+- **H-4 (regression):** dead - fix deployed via ddd5a09
 
 ### L379 WRITE pivot (wasRespectedGameTypeWhenCreated)
 - **Status:** HARD KILL
 - **Reason:** byte-identical to canonical FaultDisputeGameV2.sol:316-317
-- **IRI-OffbeatLabs I-03:** Informational, Acknowledged, intentional design choice — different angle (naming clarity, not WRITE correctness)
+- **IRI-OffbeatLabs I-03:** Informational, Acknowledged, intentional design choice - different angle (naming clarity, not WRITE correctness)
 
 ### Pattern Q bonus pre-kill
-- **blockhash/EIP-2935 boundary:** dead — test/multiproof/AggregateVerifier.t.sol L317 testVerifyWithBlockhashWindow + L336 testVerifyWithEIP2935Window cover both scenarios as success cases
+- **blockhash/EIP-2935 boundary:** dead - test/multiproof/AggregateVerifier.t.sol L317 testVerifyWithBlockhashWindow + L336 testVerifyWithEIP2935Window cover both scenarios as success cases
 
 ### Remaining 8-agent leads (status: deferred, low EV)
-- uint64 downcasts L2 seq arithmetic — likely upstream OP Stack
-- SP1 publicValues wrapping — likely upstream Succinct, OOS
-- Other minor leads — individual Pattern L cycles required, expected yield ~15-20%
+- uint64 downcasts L2 seq arithmetic - likely upstream OP Stack
+- SP1 publicValues wrapping - likely upstream Succinct, OOS
+- Other minor leads - individual Pattern L cycles required, expected yield ~15-20%
 
 ## Final pipeline state for base-azul
 
