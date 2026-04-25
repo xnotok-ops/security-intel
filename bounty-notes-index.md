@@ -2381,3 +2381,11 @@ No new code artifacts. PoC for H9-v2 already finalized in `/mnt/user-data/output
 **Method:** X-ray invariant map surfaced X-2 (8-agent solidity-auditor missed it as Operator-adjacent). PoC iterated 3x against forge test before passing. Scope shield: line 110 "'Operator is trusted' ≠ 'Operator-gated code is infallible'" quoted verbatim.
 
 **Final status:** Slot 1 H9-v2 HIGH + Slot 2 X-2 Medium submitted. Both edit-locked.
+
+## K2 PERMANENTLY CLOSED (25 Apr 2026)
+
+K2 Code4rena ($135K, deadline 27 May) closed Day 15 after revival saturation.
+4-deep audit stack: Halborn 56 findings 100% addressed, V12 118, WatchPug 12,
+Claude 15-day ~90 killed hypotheses. Day 15 revival: 28 fresh hypotheses, 0 surviving.
+SC skill never loaded. Pattern Q ×5 saves cumulative. Submits 0/2 preserved unused.
+See bounty-notes/k2/day-15-log.md + CLOSED-MEMO.md for full evidence.
