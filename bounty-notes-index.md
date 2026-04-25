@@ -2369,3 +2369,15 @@ No new code artifacts. PoC for H9-v2 already finalized in `/mnt/user-data/output
 3. **Empty-slot is a valid C4 strategy.** Signal score preservation matters when the only fallback findings are Low/QA with high noise risk. Better to ship 1 quality HIGH than 1 HIGH + 1 padding QA.
 
 4. **No-V12-paste cost minimal here.** Pattern L would only matter for Phase 2 commit. Since H1 killed at Phase 1 (Pattern Q), V12 was not the gating factor. Different from Phase 2 hypotheses where V12 grep is mandatory.
+
+---
+
+## Monetrix C4 — Session 3.5 (2026-04-25)
+
+**Outcome:** X-2 submitted as Medium (slot 2/2). Monetrix C4 research CLOSED pending triage (deadline May 4 20:00 UTC).
+
+**Finding:** Dangling `vaultSupplied[]` entry → cascading yield pipeline DoS when HyperCore delists a perp. Root cause: registry/oracle desync, no auto-sync between Config.tradeableAssets and Accountant.vaultSupplied. Governor's `removeTradeableAsset` insufficient; only Operator's `removeSuppliedEntry` unbricks.
+
+**Method:** X-ray invariant map surfaced X-2 (8-agent solidity-auditor missed it as Operator-adjacent). PoC iterated 3x against forge test before passing. Scope shield: line 110 "'Operator is trusted' ≠ 'Operator-gated code is infallible'" quoted verbatim.
+
+**Final status:** Slot 1 H9-v2 HIGH + Slot 2 X-2 Medium submitted. Both edit-locked.
