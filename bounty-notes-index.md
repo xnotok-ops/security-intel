@@ -2659,3 +2659,19 @@ Sec3 X-Ray ran as third audit layer post-initial-closure. 20 findings, 0 promote
 - Z — Realistic-Max-Input Severity Calibration
 - **AA (NEW)** — Internal-Helper Validation Beats Static Analyzer Anchor-Macro Check (sec3 X-Ray FP discipline, 30-60 min saved per untrustful flag)
 
+
+## 2026-04-28 — Codify Collection Session
+
+**Status:** PARTIAL — 31/~40 patterns codified (Batch 1 done, Batch 2 partial 9/14 PDFs)
+
+**Skills updated (6):**
+- sc-audit-evm v4.0→v4.1 (AA section 11 patterns + DEX 3 + storage 2 + oracle 1)
+- sc-audit-common v4.0→v4.2 (Sui Tier 1 + NEW Aptos Tier 2 + 13 chain-agnostic)
+- sc-audit-solana v4.0→v4.1 (Pattern queue X/Y/Z/AA from Kamino S6)
+- tools-reminder v1.6→v1.7 (Pashov hub Tier A+B + sec3 X-Ray triage)
+- bounty-lessons v2.5→v2.6 (Codify mechanism + Midas-115 + Pattern Z)
+- bounty-workflow v2.7→v2.9 (Codify Capture 4 triggers + Tier A cross-link + Phase 0.7 sec3)
+
+**Pending defer next session:**
+- 5 PDF Shieldify batch 2 sisa: Lido-CSM, Dyad, Geode-WM, ColbFinance-USC, HarmonixFinance-Vesting/Hyperliquid
+- Topaz Dex PDF
