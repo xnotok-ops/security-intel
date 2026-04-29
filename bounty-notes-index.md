@@ -3285,3 +3285,37 @@ Close Kamino chapter kalau:
 ## Next: Phase 0.5 (fresh chat)
 
 See handoff block in chat history.
+# Phase -0.5 Priors (carry to fresh chat for Phase 0.5)
+
+## Observations from handler dump (Apr 29, end of session 3)
+
+### 1. State machine: NOT_INITIATED → INITIATED → APPROVED → ACCEPTED
+- initiate: owner signer
+- approve: global_admin signer (GLOBAL_CONFIG_STATE PDA)
+- accept: pending_owner signer
+- abort: owner signer only (pending_owner cannot abort)
+
+### 2. Asymmetric ix-companion enforcement
+- initiate + accept → lending_checks::obligation_ownership_transfer_precondition_checks
+- abort → lending_checks::obligation_ownership_transfer_execution_context_checks
+- approve → NO instruction_sysvar_account field
+**HUNT: diff between precondition_checks vs execution_context_checks**
+
+### 3. Approve-blocker: obligation_has_no_active_borrow_orders_check
+**GRIEF VECTOR: renew borrow order to permanently block transfer**
+
+### 4. New error codes (8): ObligationOwnershipTransfer{InProgress,NotInitiated,NotApproved}, ObligationPendingOwnerNotSet, ObligationInvalidPendingOwner, ObligationHasActiveBorrowOrders, OnlyComputeBudgetCompanionIxsAllowed
+
+### 5. ⚡ HIGH-VALUE GAP CANDIDATE
+- 8 handlers got pending-transfer guard di diff (request_elevation_group +12, set_borrow_order +5, etc)
+- 20+ obligation-mutating handlers (borrow/deposit/withdraw/liquidate/repay/refresh/etc) NOT in diff
+- Question: is guard transitive via lending_checks.rs +100 LoC OR per-handler explicit?
+- Read lending_checks.rs FIRST untuk determine make-or-break
+
+## Phase 0.5 entry priorities (revised)
+
+1. lending_checks.rs +100 LoC — determines (a) transitive guard vs (b) gap exploit path
+2. obligation.rs +135 LoC — state machine fields + transition methods
+3. precondition_checks vs execution_context_checks divergence
+4. State machine bypass (skip approve, race accept, etc)
+5. Borrow order grief feasibility (Medium temp-freeze threshold check)
