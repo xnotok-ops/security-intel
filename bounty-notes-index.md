@@ -3605,3 +3605,468 @@ Soft cap remaining: 5 days × 8h = 40h budget; estimated 10h burn → 30h reserv
 ## Status: PHASE 0.5 COMPLETE — DISPATCH PHASE 0.7
 
 Next action: Phase 0.7 dispatch sanbir solana-auditor + sec3 X-Ray. Await convergence before Phase 1 PoC build.
+# Phase 0.7 — Sanbir solana-auditor convergence resume
+
+**Target**: kamino klend v1.19 (release/v1.17.0..HEAD)
+**Date**: 2026-04-29
+**Tool**: sanbir solana-auditor v4 (pashov-arch, 8-agent fan-out)
+**Tier**: T1P1 GREEN-LIGHT
+**HP**: 136 (Immunefi — no submit cap)
+
+---
+
+## Convergence test verdict
+
+✅ **SUCCESS** — Anti-anchoring discipline upheld (H-X tidak disebut di prompt). Sanbir secara independent mengidentifikasi H-X equivalent sebagai Finding #2 [85].
+
+✅ **EXPANSION** — Sanbir menemukan 5 finding INDEPENDENT di luar scope manual mapping Phase 0.5.
+
+✅ **CRITICAL UPGRADE** — Sanbir Finding #1 [90] adalah sharper variant of H-X — atomic exploit chain via compositional bug, lebih kuat dari H-X generic.
+
+---
+
+## Coverage status
+
+| Agent | Domain | Status |
+|---|---|---|
+| 1 | Access Control | ✅ Recovered (read in-tree source) |
+| 2 | Math Precision | ✅ Completed |
+| 3 | Vector Scan | ❌ Sandbox-blocked (/tmp/audit-*) |
+| 4 | Economic Security | ✅ Completed |
+| 5 | Execution Trace | ❌ Stalled at 600s watchdog |
+| 6 | Invariant | ✅ Completed |
+| 7 | Periphery | ❌ Sandbox-blocked |
+| 8 | First Principles | ✅ Completed |
+
+**Coverage**: 5/8 = 62.5%. Re-run dengan broader sandbox permissions disarankan untuk hardening.
+
+---
+
+## Findings ranked by confidence
+
+### TIER 1 — Confidence ≥ 85 (PRIMARY SUBMISSION CANDIDATES)
+
+#### Finding #1 [90] — Rug-by-borrow-order exploit chain
+**Severity ceiling**: CRITICAL
+**Source**: lending_market/lending_operations.rs + handler_set_borrow_order.rs + handler_fill_borrow_order.rs + handler_accept_obligation_ownership_transfer.rs
+
+**Atomic exploit chain**:
+1. T1: seller `initiate_obligation_ownership_transfer(victim)` — clean state, passes
+2. T2: admin `approve` — `obligation_has_no_active_borrow_orders_check` passes
+3. T3: seller `set_borrow_order(filled_debt_destination=attacker_TA, remaining_debt_amount=max, max_borrow_rate_bps=u32::MAX)` — handler_set_borrow_order.rs:48-93 has NO transfer-state guard
+4. T4: anyone (seller's bot) `fill_borrow_order` — invokes `borrow_obligation_liquidity_process_impl`, proceeds → attacker_TA via `obligation.borrow_order.filled_debt_destination` constraint at handler_fill_borrow_order.rs:194-198. On full fill, `borrow_order_operations.rs:167-171` resets `*borrow_order = BorrowOrder::default()`
+5. T5: victim `accept` — `obligation_has_no_active_borrow_orders_check` passes (order self-cleared). Buyer inherits debt; proceeds already in attacker wallet
+
+**Key insight**: Single accept-time hygiene check bypassed by order's self-clearing semantic. **Compositional bug** — two individually-defensible checks combine to leak.
+
+**Fix surface**: Add `check_ownership_transfer_not_in_progress()` BOTH in handler_set_borrow_order AND inside `lending_operations::borrow_obligation_liquidity` (composite handlers like fill_borrow_order skip outer Accounts validators).
+
+---
+
+#### Finding #2 [85] — Underutilized check_ownership_transfer_not_in_progress (= H-X)
+**Severity ceiling**: HIGH (variant per attack vector)
+**Source**: state/obligation.rs:593-639 + 22 mutating handlers
+
+Guard methods defined but called only from 4 own handlers. 22 mutating handlers gate solely on `has_one = owner` against live owner field.
+
+**Attack vectors enumerated**:
+- `borrow_obligation_liquidity` — proceeds go to outgoing owner; debt accrues to obligation buyer inherits
+- `withdraw_obligation_collateral` — withdraw all collateral; can also close obligation (see Finding #7)
+- `request_elevation_group` — switch to high-risk group right before accept
+- `set_obligation_order` — plant `Always + DeleverageAllDebt` with `max_execution_bonus_bps = 1000` (10% sanity cap, obligation_order_operations.rs:32,394); `accept_ownership` doesn't clear `obligation_orders[]` → confederate liquidator drains 10% post-accept
+- `update_obligation_config`, `set_borrow_order`, `deposit_and_withdraw`, `repay_and_withdraw_redeem`, `flash_borrow/repay`, `liquidate_obligation_and_redeem_reserve_collateral`, `withdraw_obligation_collateral_and_redeem_reserve_collateral`
+
+**Fix**: `obligation.check_ownership_transfer_not_in_progress()?` di setiap mutator entry point inside `lending_operations` (NOT just handler-side Anchor structs).
+
+---
+
+#### Finding #3 [85] — accept_ownership leaves stale owner-scoped fields
+**Severity ceiling**: HIGH
+**Source**: state/obligation.rs:672-677
+
+`accept_ownership` only swaps 3 fields (owner, pending_owner, ownership_transfer_state). LEAVES UNTOUCHED:
+- `referrer` — new owner permanently pays referrer fees to old owner's referrer
+- `obligation_orders[]` — adversarial orders set by old owner (e.g., aggressive auto-deleverage) survive accept and fire immediately against new owner
+- `autodeleverage_target_ltv_pct` — in-flight margin call clock transfers; new owner inherits deleveraging countdown
+- `autodeleverage_margin_call_started_timestamp` — same
+- `borrow_order` — partially mitigated by `obligation_has_no_active_borrow_orders_check` precondition, but `obligation_orders[]` not covered
+
+**Fix**: Reset all owner-scoped fields in `accept_ownership`, OR extend precondition checks to require these at default before accept.
+
+---
+
+#### Finding #4 [85] — Cross-program farm user_state.owner desync
+**Severity ceiling**: HIGH
+**Source**: lending_market/farms_ixs.rs:57-101 + state/obligation.rs:672-677
+
+Farm `user_state.owner` initialized at `cpi_initialize_farmer_delegated` (farms_ixs.rs:75) with `owner: ctx.accounts.owner.key()`. `accept_ownership` does NOT CPI to farms program to update per-reserve `user_state.owner`.
+
+**Result**: After ownership transfer, lending position owned by new owner, but every per-reserve `obligation_farm_user_state` retains OLD owner. **Farm rewards (often substantial in incentivized pools) flow to PREVIOUS owner indefinitely.**
+
+**Fix**: Either CPI farms::transfer_ownership for every per-reserve user_state on accept, OR require seller to fully unstake/close all farms before accept.
+
+---
+
+#### Finding #5 [85] — Permissionless rollover_fixed_term_borrow
+**Severity ceiling**: HIGH (independent of ownership transfer feature)
+**Source**: handler_rollover_fixed_term_borrow.rs:201-208
+
+```rust
+pub struct RolloverAccounts<'info> {
+    pub payer: Signer<'info>,           // anyone
+    #[account(mut, has_one = lending_market)]  // NO has_one = owner, NO signer-equals-owner
+    pub obligation: AccountLoader<'info, Obligation>,
+}
+```
+
+Once owner opts in via `auto_rollover_enabled` / `migration_to_fixed_enabled` and any borrow has `fixed_term_borrow_rollover_config` populated, ANY wallet can rollover.
+
+**Three exploit modes**:
+1. **Forever-extension grief**: 3rd-party bot calls same-reserve rollover every block — borrower never reaches term end, never has option to repay-and-exit
+2. **Reserve hopping**: Move debt onto adversarial-utilization reserve, raising borrower's interest cost without consent
+3. **Composes with Finding #1**: Each rollover wipes `borrowed_amount_at_expiration = 0` — next term end becomes instant-full-liquidation event
+
+---
+
+### TIER 2 — Confidence 70-84
+
+#### Finding #6 [80] — Ownership-transfer entrypoints bypass emergency_mode_disabled
+**Severity ceiling**: MEDIUM-HIGH
+**Source**: lib.rs:115-453 vs :463-:480
+
+Every other obligation-mutating instruction wrapped with `#[access_control(emergency_mode_disabled(&ctx.accounts.lending_market))]`. The 4 ownership-transfer entrypoints LACK this attribute. Worse: 4 Accounts structs carry NO `lending_market` reference at all (approve only carries `global_config`).
+
+**Result**: Pending transfer can complete (or be initiated) while team paused market in response to exploit, locking in owner change protocol intended to freeze.
+
+**Fix**: Add `lending_market` to Accounts structs + apply `#[access_control(emergency_mode_disabled(...))]`. Abort may legitimately remain available during emergency.
+
+---
+
+#### Finding #7 [80] — Permanent DoS via close-and-PDA-bind
+**Severity ceiling**: HIGH
+**Source**: handler_init_obligation.rs:48 + handler_withdraw_obligation_collateral.rs:91-94
+
+PDA seeded by `[tag, id, original_owner.key(), market.key(), seed1, seed2]` — permanently bound to original signer. `withdraw_obligation_collateral` closes obligation account when fully drained.
+
+**Sequence**:
+1. Initiate, approve
+2. Seller fully repays + withdraws all collateral (no transfer-state guard) — handler closes obligation account
+3. Buyer accept REVERTS (obligation account no longer exists)
+4. **PERMANENT DoS**: PDA seed includes original owner; buyer cannot re-init. Position permanently unreachable for buyer
+
+**Fix**: Add transfer-state guard to withdraw, OR block close-on-zero when `is_ownership_transfer_in_progress()`.
+
+---
+
+#### Finding #8 [78] — LTV-priority guard disabled in elevation groups
+**Severity ceiling**: MEDIUM-HIGH (independent of transfer feature)
+**Source**: lending_operations.rs:3781,3836
+
+```rust
+if obligation.lowest_reserve_deposit_max_ltv_pct < withdraw_reserve.config.loan_to_value_pct
+    && debt_value > 0 { return err!(LowestLtvAssetsPriority); }
+```
+
+LHS recomputed in `refresh_obligation_deposits` via `get_max_ltv_and_liquidation_threshold` — when in elevation group, returns `elevation_group.ltv_pct`. RHS reads RAW reserve config, always ≤ `elevation_group.ltv_pct` (validator at lending_operations.rs:4408 enforces).
+
+**Result**: Comparison identically false inside elevation groups. "Must withdraw lowest-LTV-deposit first" invariant silently disabled. User can structure deposits + elevation transitions to keep highest-LTV asset deposited while withdrawing lower-LTV ones.
+
+**Fix**: Compute `withdraw_max_ltv` via elevation-group-aware lookup, then compare.
+
+---
+
+#### Finding #9 [75] — Pending-owner DoS via re-armed set_borrow_order
+**Severity ceiling**: MEDIUM (DoS only)
+**Source**: handler_set_borrow_order.rs:48-93 + handler_accept_obligation_ownership_transfer.rs
+
+After approve and before buyer's accept, seller can re-call `set_borrow_order` (no transfer-state guard). Buyer's accept reverts on `ObligationHasActiveBorrowOrders`. Repeat indefinitely → buyer permanently denied obligation paid for off-chain.
+
+**Subsumed by Finding #2's universal fix** but flagged separately.
+
+---
+
+#### Finding #10 [75] — approve lacks pending_owner signer; abort blocks pending owner
+**Severity ceiling**: MEDIUM
+**Source**: handler_approve_obligation_ownership_transfer.rs:54-56 + handler_abort_obligation_ownership_transfer.rs:30-41
+
+Two related authority gaps:
+1. `pending_owner: AccountInfo<'info>` (NOT Signer) — buyer never affirmatively signs anything until accept. Malicious owner can `set pending_owner = victim_pubkey`; admin (with imperfect off-chain verification) approves; victim's only defense = not-calling-accept and waiting for owner abort
+2. `abort` requires `has_one = owner` — pending owner has NO on-chain way to repudiate the offer
+
+Combined with Finding #9: seller controls entire state machine after initiate.
+
+**Fix**: `pending_owner: Signer<'info>` on approve + extend abort to allow EITHER owner OR pending_owner.
+
+---
+
+#### Finding #11 [70] — approve skips obligation_ownership_transfer_execution_context_checks
+**Severity ceiling**: LOW-MEDIUM
+**Source**: handler_approve_obligation_ownership_transfer.rs:13-31
+
+Initiate, accept, abort all call `obligation_ownership_transfer_execution_context_checks` (lending_checks.rs:854-859) — combines `is_only_with_compute_budget_ixs_check` + `ownership_transfer_cpi_check`. Approve OMITS this entirely.
+
+**Result**: Approve can be invoked via CPI or bundled with arbitrary state-changing instructions in same transaction. Signer is trusted global_admin, so direct misuse requires admin compromise — but admin signing through buggy/malicious upstream program can have approval bundled with unintended side effects. Defense-in-depth regression.
+
+---
+
+#### Finding #12 [70] — Same-reserve rollover zeros borrowed_amount_at_expiration
+**Severity ceiling**: MEDIUM (composes with #5)
+**Source**: lending_operations.rs:993-997
+
+Same-reserve rollover writes `borrowed_amount_at_expiration = 0`. `LiquidationReason::ObligationBorrowDebtTermReached` throttle (liquidation_operations.rs:46-63) computes `throttle_protected_amount` as function of `borrowed_amount_at_expiration × (secs_until_full_liq / full_liquidation_duration)`.
+
+**Result**: Snapshot zeroed → throttle's protected amount = 0. Once new term ends, **entire borrowed amount becomes liquidatable in single instruction** instead of phasing in over `full_liquidation_duration`.
+
+Combined with Finding #5: attacker can rollover debt then liquidate full balance moment new term lapses.
+
+---
+
+### TIER 3 — Confidence 50-69 (CHECK BUT LIKELY LOW PRIORITY)
+
+#### Finding #13 [65] — Self-liquidation extracts bonus from buyer (CORRECTED)
+**Severity**: REVISED DOWN from 80 → 65
+
+Original claim: self-liquidation override branch lets owner pass arbitrary `max_allowed_ltv_override_percent`.
+
+**Correction**: Branch gated by `cfg!(feature = "staging")` at line 114. In production builds, override silently dropped to None. Override NOT exploitable in mainnet.
+
+**Residual concern**: Owner can still self-liquidate during pending transfer at standard LTV terms, capturing liquidation bonus and dumping collateral discount on buyer.
+
+---
+
+#### Finding #14 [65] — Origination fee uses to_round vs surrounding to_ceil
+**Severity**: LOW
+**Source**: reserve.rs:2025
+
+`origination_fee_f.to_round()` rounds-to-nearest; every other rounding in borrow path uses `to_ceil()`. Asymmetry causes half-unit average loss on protocol fees vs design intent. `max(origination_fee_f, 1)` partially masks for tiny fees.
+
+---
+
+#### Finding #15 [60] — OwnershipTransferState::expect panic
+**Severity**: LOW (DoS only, requires data corruption preconditions)
+**Source**: state/obligation.rs:587-590
+
+`.expect("Invalid serialized ownership transfer state")` on `try_from(self.ownership_transfer_state)`. New accounts zero-initialized so 0 safe. Legacy obligations migrating share byte position with `reserved[]` (shrunk from `[u8; 4]` to `[u8; 3]`). Pre-upgrade obligation with non-zero byte at offset would BPF-panic.
+
+**My H-AA verification (Phase 0.5)**: v1.17→v1.18 obligation.rs zero diff for reserved/padding — H-AA killed independently.
+
+---
+
+#### Finding #16 [60] — rollover 1-lamport-per-cycle debt inflation
+**Severity**: LOW
+**Source**: lending_operations.rs:1045-1072
+
+`tokens_to_transfer_over = min(target.borrowable_liquidity_amount, full_borrow_amount.to_ceil())`. Ceil on borrow vs floor fraction on repay → leftover increases obligation debt. Auto-rollover compounds 1-lamport-per-cycle drift.
+
+---
+
+#### Finding #17 [60] — propagate_rollover_config silent inheritance
+**Severity**: LOW (composes with #5)
+**Source**: borrow_order_operations.rs:190-222
+
+When fill creates new borrow slot, slot inherits `rollover_config` from order without per-fill confirmation. Combined with #5, this is on-ramp making more borrows publicly rollover-able.
+
+---
+
+#### Finding #18 [55] — Internal state-mutation methods lack precondition asserts
+**Severity**: LOW (refactor risk)
+**Source**: state/obligation.rs:664-686
+
+Each method (`approve_ownership_transfer`, `accept_ownership`, `abort_ownership_transfer`) unconditionally rewrites state. Future caller forgetting gate (e.g., refactor exposing accept_ownership from new entrypoint) would silently rewrite owner.
+
+---
+
+#### Finding #19 [55] — Elevation-group debt trackers asymmetric
+**Severity**: LOW
+**Source**: lending_operations.rs:3326-3331,3392-3395
+
+Borrow side: `+= new_borrowed_amount` (unchecked, to_ceil-rounded). Repay side: `.saturating_sub(repay_amount)` (to_ceil-rounded, clamps to zero). After interest accrues, repay can saturate tracker to 0 even though true accrued debt > 0. Mitigated by refresh re-syncing.
+
+---
+
+#### Finding #20 [55] — Compound handlers capture initial_ltv before refresh
+**Severity**: LOW
+**Source**: handler_deposit_and_withdraw.rs:24-33 + handler_repay_and_withdraw_redeem.rs:67-91
+
+Reads `initial_ltv = obligation.loan_to_value()` from STALE obligation. First refresh runs after `initial_ltv` captured. Between refreshes, accrued interest distorts comparison — sometimes blocking legitimate withdraws (`WorseLtvBlocked` raised against artificially-low pre-interest baseline).
+
+---
+
+#### Finding #21 [55] — accept doesn't require new owner UserMetadata
+**Severity**: LOW
+**Source**: handler_init_obligation.rs:62-67 vs handler_accept_obligation_ownership_transfer.rs:40-54
+
+`init_obligation` requires `owner_user_metadata`; `accept` requires no such account. New owner can inherit obligation while having no UserMetadata. Combined with unmigrated `obligation.referrer` (#3), new owner cannot register own referrer.
+
+---
+
+#### Finding #22 [55] — Precondition checks don't require obligation refresh/health
+**Severity**: LOW-MEDIUM (depends on UX promise)
+**Source**: lending_checks.rs:856-872
+
+Doesn't require obligation refreshed (`is_stale(slot, ALL_CHECKS) == false`) or healthy (LTV below liquidation threshold). Owner can initiate while LTV at 99%; buyer accepts obligation one block away from liquidation without visible signal.
+
+**Fix**: Accept should require freshness + accept caller-supplied `max_acceptable_ltv` argument (mirroring `min_expected_current_remaining_debt_amount` pattern).
+
+---
+
+#### Finding #23 [50] — Obligation PDA permanently bound to original owner.key()
+**Severity**: LOW (UX/discoverability hazard)
+**Source**: handler_init_obligation.rs:48
+
+Standalone version of #7. After accept, obligation account address permanently bound to original owner pubkey. Off-chain indexers re-deriving from `(new_owner, market, tag, id)` won't find transferred obligation. Anchor `has_one` checks still work.
+
+---
+
+## Below-threshold leads (sanbir output)
+
+1. `pending_owner != owner` literal-equality check — owner with secondary wallet can self-transfer to wash audit trail
+2. `MarkObligationForDeleveraging` callable by market owner during pending transfer
+3. 3rd-party repay during pending transfer — verify referrer-fee attribution doesn't shift to repayer
+4. `request_elevation_group` remaining_accounts reserves not market-bound — spot-check needed
+5. `fill_borrow_order` filler vs obligation-owner alias — `owner = payer.clone()` inside inner BorrowObligationLiquidity
+6. `liquidate_obligation` `withdraw_amount > max_redeemable_collateral` — ghost cToken
+7. `calculate_protocol_liquidation_fee max(protocol_fee, 1)` — returns 1 lamport even at 0% config
+8. `fill_borrow_order` unchecked u64 subtraction at borrow_order_operations.rs:143
+9. `fill_borrow_order` value-priced fill min check vs truncation residuals
+10. Scope mismatch: `lock_owner_in_elevation_group` flag not present in source
+
+---
+
+## Submission ranking (Immunefi, no submit cap)
+
+| Rank | Finding | Sev | PoC complexity | Priority |
+|---|---|---|---|---|
+| 1 | #1 Rug-by-borrow-order [90] | CRITICAL | Medium (5-step state machine) | **HIGHEST** — submit first |
+| 2 | #4 Farm user_state.owner desync [85] | HIGH | Hard (farm program setup) | HIGH — independent surface |
+| 3 | #5 Permissionless rollover [85] | HIGH | Easy (single rollover call) | HIGH — independent, easy PoC |
+| 4 | #2 Generic guard absence [85] | HIGH | Easy (single withdraw) | HIGH — multi-vector framing |
+| 5 | #7 Permanent close-DoS [80] | HIGH | Easy (withdraw all + close) | HIGH — unique impact |
+| 6 | #6 Emergency_mode bypass [80] | MEDIUM-HIGH | Medium | MEDIUM |
+| 7 | #8 LTV-priority elevation [78] | MEDIUM-HIGH | Medium (elevation setup) | MEDIUM — independent |
+| 8 | #3 accept_ownership stale state [85] | HIGH | Medium | MEDIUM — combine with #1 narrative |
+| 9 | #10 approve lacks signer [75] | MEDIUM | Easy | LOW-MEDIUM |
+| 10 | #12 Term throttle bypass [70] | MEDIUM | Medium | LOW-MEDIUM |
+
+**Submission strategy**:
+- Submit #1, #4, #5 sebagai SEPARATE Critical/High reports first — different root causes, different surfaces
+- #2 sebagai Medium-impact framing report with multi-vector demonstration
+- #7 sebagai independent High (permanent DoS unique angle)
+- #6, #8 sebagai independent Medium reports
+- #9, #10, #11, #12 bundle as defense-in-depth report or skip (low EV)
+
+---
+
+## Pre-submission verification queue
+
+Sanbir confidence ≠ certainty. Each finding requires source-level verification before report draft:
+
+| Priority | Finding | Verification target |
+|---|---|---|
+| 1 | #1 | `borrow_order_operations.rs:167-171` — confirm `*borrow_order = BorrowOrder::default()` post-fill semantics |
+| 2 | #1 | `handler_fill_borrow_order.rs:194-198` — confirm `filled_debt_destination` constraint |
+| 3 | #4 | `farms_ixs.rs:73-75` — confirm init binding + zero CPI to update from accept handler |
+| 4 | #5 | `auto_rollover_enabled` default value — kalau opt-out by default, attack surface narrower |
+| 5 | #5 | `handler_rollover_fixed_term_borrow.rs:201-208` — confirm Accounts struct |
+| 6 | #7 | `handler_withdraw_obligation_collateral.rs:91-94` — confirm close-on-zero semantics |
+| 7 | #8 | `lending_operations.rs:4408` — confirm validator constraint cited |
+| 8 | #8 | `get_max_ltv_and_liquidation_threshold` return path in elevation context |
+| 9 | #6 | lib.rs:463-480 — confirm 4 transfer entrypoints lack emergency_mode_disabled |
+| 10 | All | OtterSec March 30 dup re-check per finding (only H-X verified clean so far) |
+
+---
+
+## OtterSec dup re-check (V12-FINGERPRINT extended)
+
+H-X (Finding #2) verified clean vs OtterSec — only SUG-01 partial overlap (different framing). New findings from sanbir need fresh fingerprint grep:
+
+```bash
+A2="/mnt/c/Users/USER/bounty-notes/kamino/audits-local/klend/kamino_lend_ottersec_1.16.0_and_1.17.0.txt"
+
+# Finding #1 (rug-by-borrow-order)
+grep -i "borrow.order.*fill\|set_borrow_order.*pending\|fill.*self.cleared" "$A2"
+
+# Finding #4 (farm user_state desync)
+grep -i "farm.*user_state\|farm.*owner\|cpi.*farm.*ownership" "$A2"
+
+# Finding #5 (permissionless rollover)
+grep -i "rollover.*permissionless\|payer.*rollover\|rollover.*owner.*signer" "$A2"
+
+# Finding #6 (emergency_mode bypass)
+grep -i "emergency.*ownership\|emergency_mode_disabled\|transfer.*emergency" "$A2"
+
+# Finding #7 (close-DoS)
+grep -i "close.*obligation.*pending\|withdraw.*close.*pending\|PDA.*owner.*reinit" "$A2"
+
+# Finding #8 (LTV-priority elevation)
+grep -i "lowest_reserve_deposit_max_ltv\|LowestLtvAssetsPriority\|elevation.*ltv.*compare" "$A2"
+```
+
+Repeat across all OtterSec klend audit files + Certora + Ackee + osec_formal.
+
+---
+
+## Codify queue (Phase 0.7 trigger)
+
+Patterns to codify post-session ke `_codify-queue.md`:
+
+- **Pattern AB** — CPI-whitelist top-level vs immediate-caller semantics (already from Phase 0.5)
+- **Pattern AC** — Asymmetric admin config flag dangerous-flagging (already from Phase 0.5)
+- **Pattern AE** — Token-with-state transfer freeze requirement (already from Phase 0.5)
+- **Pattern AF** — Auditor "appears unutilized" red flag (already from Phase 0.5)
+- **Pattern AG** — Self-clearing state primitives bypass accept-time hygiene (NEW — from Finding #1)
+- **Pattern AH** — Cross-program ownership invariants (NEW — init-time owner binding survives parent transfer; from Finding #4)
+- **Pattern AI** — Permissionless cranks vs user-only operations (NEW — Solana Signer ≠ user-authority; from Finding #5)
+- **Pattern AJ** — Elevation-group config asymmetry (NEW — group-aware fields vs raw config = silent invariant disable; from Finding #8)
+- **Pattern AK** — Account close + PDA-bound-to-original-key = permanent unrecoverable state (NEW — from Finding #7)
+- **Pattern AL** — Compound handler bypass meta-rule (NEW — composite handlers skip outer Accounts validators; check_*_in_progress must live in lending_operations layer)
+
+10 patterns total queued for codify after Phase 1 completion.
+
+---
+
+## Sandbox failure modes (lessons for future runs)
+
+5 of 8 sanbir agents recovered; 3 failed:
+- **Vector-scan, Periphery**: Sandbox-blocked at start (Read/Bash denied on /tmp/audit-J2YaT6/)
+- **Execution-trace**: Stalled at 600s watchdog, partial response received
+
+**Mitigation for next run**:
+- Pre-grant `/tmp/audit-*` Read/Bash permissions in Claude Code session config
+- Increase agent timeout watchdog to 1200s
+- Run sanbir twice with different seeds for cross-validation
+
+**Coverage gap impact**: Vector-scan would primarily replicate findings already covered (bundle includes attack-vectors-{1..5}.md). Periphery's main remit (account-closing, lifecycle, Token-2022) partially covered by Findings #4 (farm cross-program), #7 (close-DoS), #21 (UserMetadata asymmetry). **Execution-trace gap most concerning** — re-run with broader sandbox.
+
+---
+
+## Phase 1 dispatch plan
+
+**Recommended sequence**:
+1. **Verification pass** (1-2h) — Run verification queue commands above; confirm cited line numbers + semantics
+2. **OtterSec dup re-check** (30min) — Run V12-FINGERPRINT extended grep across all audit files
+3. **L3 sec3 X-Ray dispatch** (parallel, 30-60min) — Independent third layer convergence
+4. **Phase 1 PoC build** (4-6h) — Start with Finding #1 (CRITICAL, atomic chain). Use solana-program-test + bankrun
+5. **Gate 5.5 final** — `query-security-txt` against deployed program
+6. **Report drafts** — One report per High/Critical finding, batch low-tier ones
+
+**Time budget**:
+- Tier 1 soft cap: 5 days × 8h = 40h budget
+- Phase 0.5 burned: 1.5h
+- Phase 0.7 burned: ~30min (resume + plan)
+- Verification + dup-recheck: 2-3h
+- Phase 1 PoC build (Finding #1): 4-6h
+- Phase 1 PoC builds (#4, #5, #7, #2): 8-12h
+- Report drafting (5-7 reports): 6-8h
+- Buffer: 8-12h
+- **Total estimate**: 30-42h — within Tier 1 soft cap
+
+---
+
+## Status
+
+**PHASE 0.7 COMPLETE** — Sanbir convergence: confirmed + expanded.
+
+**Next**: Verification pass → OtterSec dup re-check → sec3 X-Ray dispatch → Phase 1 PoC build.
+
+**Critical reminder**: Anti-anchoring discipline upheld throughout. All findings independently confirmed or expanded scope. Confidence high di top-tier findings; verification queue must run before submission.
