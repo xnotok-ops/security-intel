@@ -3262,3 +3262,26 @@ Close Kamino chapter kalau:
 | Apr 20, 2026 (v1) | Initial mapping created based on GitHub page view (21 PDFs estimated) |
 | Apr 20, 2026 (v2) | **REVISED** — actual clone shows 40 PDFs. Priority queue re-ranked: farms up to Tier 1 P1, kliquidity demoted to Tier 2 P7. Added version-by-version audit tracking for klend + kvault. Added klend post-1.17.0 audit gap as Tier 1 P2 target. |
 | Apr 29, 2026 (v3) | **POST-CLOSURE REVISION** — kfarms ⚫ CLOSED Apr 25 (54 angles, 3-layer saturation). T1P2 klend post-1.17.0 promoted to T1P1. Re-tier P3-P5. Added §4.5 Pre-Activation Check protocol (mandatory before T1P1 dispatch). Added §4.6 kfarms closure block. Added Sessions 1-3 log. Added §14 Tools Status v2.9 stack. Lessons 2-4 added. Immunefi scope Last Updated bump (28 Apr) noted as admin reaffirmation, not substantive revival signal. |
+# Session 3 — Apr 29, 2026 — Pre-Activation Check (T1P1 klend)
+
+## Verdict: GREEN-LIGHT
+
+| Step | Result |
+|---|---|
+| security.txt | OtterSec/Offside/Certora/Sec3 confirmed; no source_revision field |
+| Repo HEAD | release/v1.19.0 |
+| Audit boundary | release/v1.17.0 |
+| Commits post-v1.17.0 | 3 PRs (#58 v1.18, #59 interface, #60 v1.19) |
+| Diff | +610/-19 LoC across 21 files |
+| Mainnet deploy slot | 415332643 |
+| Mainnet deploy time | 2026-04-24 10:59:38 UTC |
+| Lag from v1.19.0 tag | ~13h 38min |
+| Upgrade authority | GzFgdRJXmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW |
+
+## Decision
+
+**T1P1 ACTIVATED full Phase 0.5.** v1.19 confirmed deployed Apr 24, +610 LoC unaudited live di mainnet.
+
+## Next: Phase 0.5 (fresh chat)
+
+See handoff block in chat history.
