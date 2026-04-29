@@ -4070,3 +4070,198 @@ Patterns to codify post-session ke `_codify-queue.md`:
 **Next**: Verification pass → OtterSec dup re-check → sec3 X-Ray dispatch → Phase 1 PoC build.
 
 **Critical reminder**: Anti-anchoring discipline upheld throughout. All findings independently confirmed or expanded scope. Confidence high di top-tier findings; verification queue must run before submission.
+# Finding #1 source verification result
+
+**Date**: 2026-04-29T14:51:35Z
+**Klend repo**: /mnt/c/Users/USER/bounty-notes/kamino/repos/klend
+**Commit**: 95d694b0bd0593ed354aea0e882f185329d656c4
+**Tag**: release/v1.19.0
+**Verification script version**: 1.0
+
+---
+
+## Verification matrix
+
+
+### A1 — borrow_order self-clears to default after full fill
+
+- **File**: `programs/klend/src/state/borrow_order_operations.rs`
+- **Pattern**: `\*borrow_order\s*=\s*BorrowOrder::default\(\)|\*borrow_order\s*=\s*Default::default\(\)`
+- **Critical**: yes
+
+**Result**: ✅ MATCH FOUND
+
+```
+35:            *borrow_order = BorrowOrder::default();
+36-        }
+37-        return Ok(());
+38-    };
+--
+171:        *borrow_order = BorrowOrder::default();
+172-    } else {
+173-        event_emitter.emit(BorrowOrderPartialFillEvent {
+174-            before: borrow_order_initial_state,
+```
+
+### A2 — fill_borrow_order constrains user_destination via filled_debt_destination
+
+- **File**: `programs/klend/src/handlers/handler_fill_borrow_order.rs`
+- **Pattern**: `filled_debt_destination|borrow_order\.filled_debt_destination`
+- **Critical**: yes
+
+**Result**: ✅ MATCH FOUND
+
+```
+195:        address = obligation.load()?.borrow_order.filled_debt_destination,
+196-        token::mint = reserve_source_liquidity.mint,
+197-        token::authority = obligation.load()?.owner,
+198-    )]
+199-    pub user_destination_liquidity: Box<InterfaceAccount<'info, TokenAccount>>,
+200-
+201-
+202-    #[account(mut)]
+203-    pub referrer_token_state: Option<AccountLoader<'info, ReferrerTokenState>>,
+```
+
+### A3 — handler_set_borrow_order has NO check_ownership_transfer_not_in_progress (ABSENCE check)
+
+- **File**: `programs/klend/src/handlers/handler_set_borrow_order.rs`
+- **Must NOT contain**: `check_ownership_transfer_not_in_progress|check_ownership_transfer_in_progress`
+- **Critical**: yes
+
+**Result**: ✅ ABSENCE CONFIRMED
+
+### A4 — fill_borrow_order constructs inner BorrowObligationLiquidity with payer.clone()
+
+- **File**: `programs/klend/src/handlers/handler_fill_borrow_order.rs`
+- **Pattern**: `payer\.clone\(\)|owner:\s*payer`
+- **Critical**: no
+
+**Result**: ✅ MATCH FOUND
+
+```
+115:        let owner = payer.clone();
+116-
+117-       
+118-       
+119-       
+120-       
+```
+
+### A5 — obligation_has_no_active_borrow_orders_check tests against Default
+
+- **File**: `programs/klend/src/lending_market/lending_checks.rs`
+- **Pattern**: `borrow_order\s*!=\s*Default::default\(\)|borrow_order\.is_empty\(\)`
+- **Critical**: yes
+
+**Result**: ✅ MATCH FOUND
+
+```
+875:    if obligation.borrow_order != Default::default() {
+876-        msg!(
+877-            "Obligation has active borrow order with remaining debt amount: {}",
+878-            obligation.borrow_order.remaining_debt_amount
+879-        );
+880-        return err!(LendingError::ObligationHasActiveBorrowOrders);
+```
+
+### A6 — accept_obligation_ownership_transfer calls precondition_checks
+
+- **File**: `programs/klend/src/handlers/handler_accept_obligation_ownership_transfer.rs`
+- **Pattern**: `obligation_ownership_transfer_precondition_checks|check_ownership_transfer_approved`
+- **Critical**: yes
+
+**Result**: ✅ MATCH FOUND
+
+```
+23:    lending_checks::obligation_ownership_transfer_precondition_checks(
+24-        &ctx.accounts.instruction_sysvar_account,
+25-        obligation,
+26-    )?;
+27:    obligation.check_ownership_transfer_approved()?;
+28-
+29-    obligation.accept_ownership()?;
+30-
+31-    msg!(
+32-        "Completed ownership transfer for obligation {} to new owner {}",
+```
+
+### A7 — fill_borrow_order CPIs to borrow_obligation_liquidity_process_impl
+
+- **File**: `programs/klend/src/handlers/handler_fill_borrow_order.rs`
+- **Pattern**: `borrow_obligation_liquidity_process_impl|process_impl`
+- **Critical**: no
+
+**Result**: ✅ MATCH FOUND
+
+```
+10:    handlers::{borrow_obligation_liquidity_process_impl, BorrowObligationLiquidity},
+11-    refresh_farms,
+12-    state::{obligation::Obligation, LendingMarket, Reserve},
+13-    utils::{ctx_event_emitter, seeds},
+14-    BorrowSize, LendingError, ReferrerTokenState, ReserveFarmKind,
+15-};
+--
+18:    process_impl(&ctx)?;
+19-    refresh_farms!(
+20-        ctx.accounts.borrow_accounts,
+21-        [(
+22-            ctx.accounts.borrow_accounts.borrow_reserve,
+23-            ctx.accounts.farms_accounts,
+--
+30:fn process_impl<'info>(ctx: &Context<'_, '_, '_, 'info, FillBorrowOrder<'info>>) -> Result<()> {
+31-   
+32-   
+33-
+34-    let accounts = &ctx.accounts.borrow_accounts;
+35-    let remaining_accounts = ctx.remaining_accounts;
+--
+49:    let fill_amount = borrow_obligation_liquidity_process_impl(
+50-        &BorrowObligationLiquidity::from(accounts.clone()),
+51-        remaining_accounts,
+52-        BorrowSize::AtMost(order_remaining_amount),
+53-    )?;
+54-
+```
+
+### A8 — SetBorrowOrder requires owner = Signer
+
+- **File**: `programs/klend/src/handlers/handler_set_borrow_order.rs`
+- **Pattern**: `owner:\s*Signer|has_one\s*=\s*owner`
+- **Critical**: yes
+
+**Result**: ✅ MATCH FOUND
+
+```
+50:    pub owner: Signer<'info>,
+51-
+52-
+53:    #[account(mut, has_one = lending_market, has_one = owner)]
+54-    pub obligation: AccountLoader<'info, Obligation>,
+55-
+56-
+```
+
+---
+
+## Summary
+
+- **Total checks**: 8
+- **Passed**: 8
+- **Failed**: 0
+- **Critical failures**: 0
+
+## ✅ VERDICT: ALL CHECKS PASSED — PROCEED TO POC BUILD
+
+All sanbir cited assumptions verified. Finding #1 exploit chain is structurally
+sound at the source-code level. Proceed to:
+
+```bash
+./01-build-poc.sh
+```
+
+### Next actions
+
+- Run 01-build-poc.sh to scaffold PoC test file
+- Save this verification-result.md to `bounty-notes/kamino/sessions/`
+- Update `phase-0.7-sanbir-klend-v119.md` Finding #1 → status: VERIFIED-FULL
