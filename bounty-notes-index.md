@@ -3319,3 +3319,289 @@ See handoff block in chat history.
 3. precondition_checks vs execution_context_checks divergence
 4. State machine bypass (skip approve, race accept, etc)
 5. Borrow order grief feasibility (Medium temp-freeze threshold check)
+# Kamino klend v1.19 — Phase 0.5 Manual Mapping
+
+**Session date**: 2026-04-29
+**Audit boundary REVISED**: OtterSec March 30, 2026 (covers v1.16, v1.17, AND ownership-transfer feature in v1.19) — NOT v1.17.0 cutoff as initial GATE 6 assumed
+**Mainnet deploy**: v1.19.0 at slot 415332643 (2026-04-24 10:59 UTC), ~13h post-tag
+**Tier**: T1P1 GREEN-LIGHT confirmed
+**HP**: 136 (Immunefi platform — no submit limit)
+
+---
+
+## Executive summary
+
+Phase 0.5 manual mapping uncovered **1 PRIMARY candidate (H-X)** + 5 secondary hypotheses requiring Phase 0.7/1 verification. v1.19 introduces a 4-stage obligation ownership transfer primitive (initiate → approve → accept/abort) but **fails to freeze 22 mutating handlers during pending state**, enabling rug-pull of obligation collateral between transfer initiate and accept.
+
+**Critical revision**: OtterSec March 30 audit covers ownership transfer feature directly (despite report titled "1.16.0_and_1.17.0"). H-X SURVIVED dup check — auditor flagged unused guard method as naming/UX issue (SUG-01), missing the structural insight that 22 handlers SHOULD call it.
+
+---
+
+## H-X — PRIMARY CANDIDATE
+
+**Title**: Obligation ownership transfer state lacks mutation freeze, enabling collateral exfiltration between initiate and accept
+
+**Severity ceiling**: HIGH (primitive-level), CRITICAL (if receiver protocol exists at submit time)
+
+### Vulnerability
+
+`Obligation` struct gains `ownership_transfer_state: u8` and `pending_owner: Pubkey` fields in v1.19, with state machine:
+
+```
+None(0) → Initiated(1) → Approved(2) → (accept) → None [owner=pending_owner]
+                                     → (abort)  → None [unchanged owner]
+```
+
+Four guard methods defined in `state/obligation.rs`:
+
+```rust
+check_ownership_transfer_not_in_progress()  // should freeze mutating ops
+check_ownership_transfer_in_progress()
+check_ownership_transfer_initiated()
+check_ownership_transfer_approved()
+```
+
+Only callers found across entire codebase:
+- `handler_initiate_obligation_ownership_transfer.rs` calls `check_ownership_transfer_not_in_progress`
+- `handler_approve_obligation_ownership_transfer.rs` calls `check_ownership_transfer_initiated`
+- `handler_accept_obligation_ownership_transfer.rs` calls `check_ownership_transfer_approved`
+- `handler_abort_obligation_ownership_transfer.rs` calls `check_ownership_transfer_in_progress`
+
+**ZERO callers in the 22 mutating handler files** that modify obligation state (borrow, withdraw, deposit, liquidate, flash, repay, set_borrow_order, etc).
+
+`Obligation::accept_ownership()` performs unconditional swap:
+```rust
+pub fn accept_ownership(&mut self) -> Result<()> {
+    self.owner = self.pending_owner;
+    self.pending_owner = Pubkey::default();
+    self.ownership_transfer_state = OwnershipTransferState::None.into();
+    Ok(())
+}
+```
+
+### Attack flow
+
+1. Owner-EVE has obligation O with $10k collateral, $5k debt
+2. EVE arranges sale to VICTIM (off-chain marketplace, P2P deal, composable wrapper, etc) — VICTIM expects to receive obligation in stated state
+3. EVE: `initiate_obligation_ownership_transfer(pending_owner=VICTIM)` → state=Initiated
+4. global_admin: `approve_obligation_ownership_transfer(obligation=O)` → state=Approved
+5. **Window of vulnerability opens.** EVE calls any mutating handler:
+   - `handler_withdraw_obligation_collateral_and_redeem_reserve_collateral` → drains $10k cash to EVE wallet
+   - OR `handler_borrow_obligation_liquidity` → inflates debt to $5k+Δ
+   - OR combined `handler_repay_and_withdraw_redeem` → atomic exfil
+   - None of these check `ownership_transfer_state`
+6. VICTIM: `accept_obligation_ownership_transfer` → owner=VICTIM, but obligation now $0 collateral / $5k+Δ debt
+7. VICTIM owns insolvent obligation, instant liquidation, full loss
+
+### Severity argument
+
+- **Asset loss**: direct, deterministic
+- **Permission preconditions**: owner controls own obligation by design (not abuse of privilege; abuse of UX promise)
+- **No oracle/state preconditions**: works against any obligation regardless of market conditions
+- **Atomicity violation**: standard token-with-state primitives (ERC-721 ownerOf, Token-2022 transition) freeze mutations during transfer; klend's primitive does not
+
+### Auditor near-miss (severity strengthener)
+
+OtterSec SUG-01 explicitly notes `check_ownership_transfer_in_progress` "appears to be unutilized," recommends rename or removal. They observed the symptom (dead guard method) but did not trace root cause (missing call sites in 22 handlers). If Kamino follows SUG-01 and removes the method, the latent guard infrastructure disappears, making future remediation harder.
+
+### Gate 1-5 + Invalidation Cross-Check
+
+| Gate | Status | Notes |
+|---|---|---|
+| 1 In-scope | PASS | T1P1 GREEN, klend mainnet, primitive added v1.19 |
+| 2 Severity | PASS | HIGH ceiling, CRITICAL if receiver infra found |
+| 3 Attack flow | PASS | Concrete steps, no exotic preconditions |
+| 4 V12-FINGERPRINT | PASS | All 10 OtterSec findings reviewed; no dup; SUG-01 = different framing |
+| 5 45 FP patterns | PASS | None match (not admin trust, not user-attack-self, not theoretical, not external oracle) |
+| 5.5 security.txt | PENDING | Phase 1 query-security-txt mandatory |
+| Invalidation Cross-Check | PASS | Pattern AA N/A (manual finding); kfarms decision rule 14 N/A (mainnet deployed); audit gap by construction |
+
+### v1.19 attack surface — handlers requiring guard injection
+
+Primary candidates for PoC (in priority order):
+1. **`handler_withdraw_obligation_collateral_and_redeem_reserve_collateral.rs`** — direct cash exfil, single-tx
+2. **`handler_withdraw_obligation_collateral.rs`** — collateral-only exit
+3. **`handler_borrow_obligation_liquidity.rs`** — debt inflation variant
+4. **`handler_repay_and_withdraw_redeem.rs`** — combined atomic exfil (most dramatic)
+5. **`handler_deposit_and_withdraw.rs`** — combined variant
+6. **`handler_liquidate_obligation_and_redeem_reserve_collateral.rs`** — third-party liquidation can also affect pending state
+7. `handler_flash_borrow_reserve_liquidity.rs` + `handler_flash_repay_reserve_liquidity.rs`
+8. `handler_set_borrow_order.rs` / `handler_set_obligation_order.rs` / `handler_fill_borrow_order.rs`
+9. `handler_rollover_fixed_term_borrow.rs`
+10. `handler_enqueue_to_withdraw.rs` / `handler_cancel_withdraw_ticket.rs` / `handler_withdraw_queued_liquidity.rs`
+
+22 total handlers, all unguarded.
+
+### Phase 1 dispatch
+
+- Build PoC against handler_withdraw_obligation_collateral_and_redeem_reserve_collateral
+- Confirm via Sanbir solana-auditor (Phase 0.7 L2 cross-validator)
+- Confirm via sec3 X-Ray (Phase 0.7 L3 cross-validator)
+- Run `query-security-txt` against deployed v1.19 program (Gate 5.5 verification)
+- Recon: identify any deployed kvault / Exponent / off-chain marketplace integration that consumes obligation transfer (would promote HIGH → CRITICAL)
+
+---
+
+## Secondary hypothesis ranking
+
+### H-T — `global_admin` as whitelisted PDA enables unauthorized approve
+
+**Severity ceiling**: HIGH if global_admin is PDA owned by whitelisted program with exposed callback semantics.
+
+CPI whitelist contains kvault, Squads v3/v4, FlexLend, Meteora, Exponent (level 3), Sandglass, BestLend, DefiCarrot, Divvy, Agro. If global_admin = PDA derived from any of these, attacker may chain CPI to invoke `handler_approve_obligation_ownership_transfer` on arbitrary obligation in Initiated state.
+
+**Combined with H-X**: if H-T valid, attacker can self-execute T3+T4+T5+T6 without third-party global_admin signature, eliminating the only multi-signer requirement in attack flow.
+
+**Verification needed**:
+- Read all 4 transfer handler `#[derive(Accounts)]` constraints
+- Identify global_admin pubkey (likely in LendingMarket struct)
+- Verify if global_admin matches any whitelisted-program PDA derivation
+
+### H-P — Whitelisted product CPI abuse
+
+**Severity ceiling**: MEDIUM-HIGH
+
+Any whitelisted product (kvault is most concerning, kvault staging+mainnet both whitelisted) that exposes generic CPI passthrough or has accept-arbitrary-obligation semantics would let attacker craft transactions that initiate/approve/accept ownership transfer without direct user signatures.
+
+**Verification needed**:
+- Audit kvault product: does it allow caller to specify obligation account in any ix? Does it expose callback that accepts arbitrary CPI target?
+- Check Exponent Core (whitelist_level=3, deepest tolerance) for similar issues
+
+### H-U — Emergency-mode toggle asymmetry
+
+**Severity ceiling**: MEDIUM
+
+`UpdateConfigMode::UpdateReserveEmergencyMode`:
+- Enable (value=1) flagged as "dangerous" → timelocked path
+- Disable (value=0) NOT flagged dangerous → instant admin-only
+
+Compromised admin key can rapidly disable emergency mode that legit admin enabled in response to ongoing exploit, accelerating attack window. Combined with new emergency-mode price short-circuit (`PriceStatusFlags::empty()` + ts=0), brief race window between disable and refresh.
+
+**Verification needed**:
+- Trace emergency_mode disable flow end-to-end
+- Check if any operation between disable + first refresh allows abuse
+- Likely Low/Medium given operational complexity
+
+### H-K — Whitelist depth-3 (Exponent Core) abuse
+
+**Severity ceiling**: MEDIUM
+
+`whitelist_level=3` allows up to 3 levels of intermediate code on stack. If Exponent Core itself or any intermediate program in the chain has reentrancy or CPI-passthrough semantics, klend ix may be invoked from untrusted caller via 3-level chain.
+
+**Verification needed**:
+- Audit Exponent Core integration patterns
+- Identify if Exponent passes klend ix targets controllably
+
+### H-D — Borrow-order grief during pending transfer (LOW)
+
+**Severity ceiling**: LOW (DoS only, mitigated)
+
+`obligation_has_no_active_borrow_orders_check` blocks initiate if active borrow order exists. v1.19 added `clear_expired_borrow_order_on_initiating_obligation_ownership_transfer` as escape valve (auto-clears expired orders). Grief still possible if attacker maintains non-expired orders, but with limited impact.
+
+**Park** unless H-X PoC reveals compounding interaction.
+
+---
+
+## Killed hypotheses
+
+| H | Verdict |
+|---|---|
+| H-A (approve bypass) | Pending handler review but unlikely — guards correctly placed in approve handler |
+| H-B (race accept) | Solana single-thread per account, no race — atomic per-obligation |
+| H-C (original 20+ unguarded ops) | **Subsumed into H-X** (same root cause, more specific instantiation) |
+| H-E (precondition vs execution_context divergence) | Asymmetry by design; abort doesn't need no-active-borrow check |
+| H-J (borrow_order Default eq weakness) | Pending struct view, but `Default::default()` for fixed struct is well-defined |
+| H-M (PDA lockout) | NEUTRALIZED via whitelist contents (kvault listed; PDA owners CAN participate via whitelisted products) |
+| H-V (PriceStatusFlags::empty) | BENIGN — critical ops use ALL_CHECKS, empty flags fail correctly; emergency_mode also blocks at lending_checks layer independently |
+| H-AA (migration panic v1.18→v1.19) | KILLED — v1.17→v1.18 obligation.rs zero diff for reserved/padding bytes; existing obligations migrate cleanly to None state |
+| H-Y/H-Z (layout integrity) | Layout sizing checked, default-fill safe |
+| H-G (PDA derivation breaks on owner change) | Obligation PDA likely seeded by lending_market + tag (not owner); needs confirmation but standard Solana pattern |
+| H-H (mid-transfer collateral/debt by old owner before accept) | **Subsumed into H-X** |
+
+---
+
+## Phase 0.7 dispatch plan
+
+Phase 0.7 cross-validators (anti-anchoring discipline per workflow v2.9):
+
+1. **L2 Sanbir solana-auditor** — invoke 8-agent Phase 2 on `programs/klend/src/handlers/handler_*ownership_transfer*.rs` + `programs/klend/src/state/obligation.rs` ownership transfer methods. Expected to flag missing-guard-callers if working correctly.
+
+2. **L3 sec3 X-Ray Docker LLVM-IR** — run all 18 SEV rules against v1.19 build. Specifically watch for:
+   - SEV rules around state-machine guards
+   - "untrustful account" flags on obligation in mutating handlers (Pattern AA recheck)
+   - Any flag matching `ObligationOwnershipTransferInProgress` error code reachability
+
+3. **Convergence test**: if both L2 and L3 surface H-X-equivalent finding → mathematical confirmation. If both miss → high probability auditor blind spot, H-X stands as unique manual finding.
+
+---
+
+## Phase 1 dispatch plan
+
+After Phase 0.7 convergence test:
+
+1. **PoC build** — Foundry not applicable (Solana). Use:
+   - `solana-program-test` with bankrun for fast unit-level PoC
+   - OR full mainnet-fork via `surfpool` / cloned localnet
+   - Target: `handler_withdraw_obligation_collateral_and_redeem_reserve_collateral` after approve
+
+2. **PoC narrative**:
+   - Setup: lending market + reserve + obligation w/ collateral, ALICE = owner
+   - Step 1: ALICE initiates transfer to BOB (pending_owner=BOB)
+   - Step 2: GLOBAL_ADMIN approves
+   - Step 3: ALICE withdraws all collateral (PoC asserts: NO ERROR despite Approved state)
+   - Step 4: BOB accepts (PoC asserts: ownership transferred, but obligation drained)
+   - Assertion: `obligation.deposits[0].deposited_amount == 0 && obligation.owner == BOB`
+
+3. **Receiver-infra recon**:
+   - Search Kamino docs for any product that accepts ownership transfer
+   - Search GitHub for downstream integrators
+   - Check kvault / leverage / multiply for transfer-aware logic
+   - If found → severity HIGH→CRITICAL, value $250k-$1M Immunefi payout band
+
+4. **Gate 5.5 final**:
+   - `query-security-txt` on deployed program GzFgdRJXmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW
+   - Extract `auditors`, `source_revision`, `expiry`, `acknowledgements`
+   - Cross-reference vs OtterSec March 30 report
+   - If `expiry > now` AND auditors include OtterSec → audit considered "covering" but didn't catch H-X → strengthens novelty argument
+
+---
+
+## Codify queue (append to `_codify-queue.md` after session)
+
+Phase 0.5 trigger point fired; codify candidates identified:
+
+- **Pattern AB** — CPI-whitelist top-level vs immediate-caller semantics (Solana audit checklist: identify whitelist filter mechanism before assuming "blanket reject CPI")
+- **Pattern AC** — Asymmetric admin config flag (enable=dangerous-flagged vs disable=fast-path; emergency-mode disable race window)
+- **Pattern AE** — Token-with-state transfer primitives MUST freeze mutating ops between initiate and accept; auditor must enumerate all state mutators and verify each calls `check_*_in_progress()` guard. Missing guard call site = direct theft path. Standard pattern from ERC-721 ownerOf, Token-2022 transition. Solana-specific: PDA-owner field changes are atomic value primitives; must have global mutation lock.
+- **Pattern AF** — Auditor "appears unutilized" red flag pattern: when audit comment says "function unutilized, suggest remove/rename," do NOT accept at face value. Method name reveals INTENT — if intent matches a missing-guard pattern, the absent call sites are the actual flaw, not the method itself. Common in cross-cutting concerns (locks, freezes, validators).
+
+---
+
+## Audit boundary correction (LESSON for future GATE 6)
+
+**Original assumption**: audit ends at v1.17.0
+**Reality**: OtterSec March 30, 2026 report (titled "1.16.0_and_1.17.0") explicitly references v1.19 features:
+- `clear_expired_borrow_order_on_initiating_obligation_ownership_transfer` (added v1.19 P3 diff)
+- `check_ownership_transfer_in_progress` (added v1.19 P2 diff)
+- "Disallows aborting after approve" (matches v1.19 4-state machine)
+
+**GATE 6 lesson**: audit report TITLE may not reflect actual scope. Always grep audit content for current diff features before assuming coverage gap. Estimated unaudited LoC may be much smaller than diff stat suggests.
+
+For Kamino v1.19 specifically: audit DID cover ownership transfer feature, but at surface level (4 handlers + helpers, naming review). Did NOT enumerate guard call sites across mutating handlers. This is the gap H-X exploits.
+
+---
+
+## Time budget
+
+- Phase 0.5 actual: ~1.5h (within 3-4h cap)
+- Phase 0.7 estimate: 2-3h (sanbir + sec3 dispatch + convergence review)
+- Phase 1 estimate: 4-6h (PoC build + receiver recon + Gate 5.5 verification + report draft)
+- Submit-ready estimate: 8-10h total (well within Tier 1 5-day soft cap)
+
+Soft cap remaining: 5 days × 8h = 40h budget; estimated 10h burn → 30h reserve for T1P2/klend further hypotheses if H-X submits clean.
+
+---
+
+## Status: PHASE 0.5 COMPLETE — DISPATCH PHASE 0.7
+
+Next action: Phase 0.7 dispatch sanbir solana-auditor + sec3 X-Ray. Await convergence before Phase 1 PoC build.
