@@ -2675,3 +2675,590 @@ Sec3 X-Ray ran as third audit layer post-initial-closure. 20 findings, 0 promote
 **Pending defer next session:**
 - 5 PDF Shieldify batch 2 sisa: Lido-CSM, Dyad, Geode-WM, ColbFinance-USC, HarmonixFinance-Vesting/Hyperliquid
 - Topaz Dex PDF
+# Kamino Research Master Map (v3)
+
+> **Single source of truth** untuk riset Kamino Immunefi bug bounty.
+> Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
+
+**Last updated:** Apr 29, 2026
+**Owner:** xnotok-ops (Notok)
+**Phase:** 0 — Scope re-mapping post-T1P1 closure (revival check for T1P2)
+**Related:** `bounty-notes/xrpl-sherlock/` (mediation ~May 11), `security-intel/bounty-notes-index.md`
+
+**⚠️ v3 CHANGES (Apr 29):**
+- T1P1 farms ⚫ **CLOSED Apr 25** (54 angles, 0 promoted, 0/2 submits — saturation confirmed via 3-layer manual + sanbir + sec3 X-Ray)
+- T1P2 klend post-1.17.0 → **promoted to T1P1** (ACTIVE next target)
+- Primacy of Impact placeholder row added Immunefi page 29 Apr (admin reaffirmation, rule sudah documented)
+- Codify Apr 28: 54 kfarms angles + closure patterns migrated → `sc-audit-solana v4.1` (Patterns X/Y/Z/AA)
+- Tools stack v2.9: bounty-workflow + sanbir solana-auditor (Phase 0.7) + sec3 X-Ray Docker (Phase 0.7 cross-validator)
+- **Pre-Activation Check** added (Section 4.5) — verify klend HEAD > v1.17.0 BEFORE Phase 1 dispatch
+
+**⚠️ v2 CHANGES (Apr 20) — preserved:** Audit count 21 → **40 PDFs actual**. Priority queue re-ranked per actual clone (farms up, kliquidity down).
+
+---
+
+## 1. Program Overview
+
+| Field | Value |
+|---|---|
+| Platform | Immunefi |
+| URL | https://immunefi.com/bug-bounty/kamino/ |
+| Live Since | 06 Oct 2025 |
+| Last Updated (scope) | **28 Apr 2026** (was 16 Oct 2025) |
+| Deadline | **No deadline (rolling)** |
+| Chain | Solana Mainnet only |
+| Triage | Immunefi-managed |
+| KYC | Required (Notok: ✅ done) |
+| Stake | **$0** (no stake per submission) |
+| PoC | Required for ALL severities |
+| Responsible Publication | Category 3 — Approval Required |
+| Total Assets in Scope | **19** (12 SC addresses + 3 SC GitHub + 1 W&A + 2 Primacy placeholders + 1 hidden) |
+| Total Impacts in Scope | 22 |
+
+### Reward Matrix
+
+| Tier | Amount | Floor | Condition |
+|---|---|---|---|
+| **SC Critical (fund loss)** | 10% of funds affected, MAX $1,500,000 | **$150,000 min** | ≥$50K at risk |
+| **SC Critical (non-fund)** | Flat $20,000 | — | — |
+| **SC High** | Up to $100,000 (100% funds at risk, capped) | — | ≥$5,000 at risk |
+| **SC Medium** | **Flat $10,000** | — | Temp freeze ≥100K USD & ≥9,000 blocks |
+| **Web Critical** | Flat $50,000 | — | Loss of funds, no user action |
+| **Web High** | Up to $10,000 | — | — |
+
+### Special Rules
+
+- **Primacy of Impact** — applies to SC Critical, SC High, Web Critical. Asset NOT listed tetap covered kalau ada real fund-loss impact. **(Reaffirmed 29 Apr 2026 via explicit asset placeholder row di Immunefi scope page.)**
+- **Primacy of Rules** — berlaku untuk SC Medium dan Web High (harus listed asset).
+- **Upgradable contract caveat** — kalau contract bisa upgraded/paused, HANYA initial attack yang dihitung.
+- **Critical downgrade** — kalau at-risk <$50K, auto downgrade ke High.
+- **Config-state OOS** — config states yang neither default nor currently-deployed = OOS (Decision Rule 14, dari kfarms `is_farm_frozen` lesson).
+
+---
+
+## 2. GitHub Repositories
+
+**Org:** https://github.com/Kamino-Finance
+
+### 🎯 Smart Contract Programs (IN-SCOPE — target research)
+
+| Repo | Product | Language | Mainnet Program ID | Clone Status |
+|---|---|---|---|---|
+| [klend](https://github.com/Kamino-Finance/klend) | Lending | Rust/Anchor | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` | ✅ Cloned |
+| [scope](https://github.com/Kamino-Finance/scope) | Oracle aggregator | Rust | `29ikn4yTuPa9MF2fWJ` (Onchain program suffix) | ✅ Cloned |
+| [kvault](https://github.com/Kamino-Finance/kvault) | Earn Vaults | Rust | `KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd` | ✅ Cloned |
+| [limo](https://github.com/Kamino-Finance/limo) | Limit Orders | Rust | TBD | ✅ Cloned |
+| [kfarms](https://github.com/Kamino-Finance/kfarms) | Farm rewards | Rust | `TpmMrAZrC7S7vJa91Hr` (suffix) | ✅ Cloned (Apr 21) — **⚫ CLOSED Apr 25** |
+| [kliquidity](https://github.com/Kamino-Finance/kliquidity) | Concentrated Liquidity | Rust | `AmQNZKBdY8s47dehDc` (Liquidity Program suffix) | ❌ Repo path belum confirmed |
+| Leverage | Leverage product | ❓ | TBD | ❌ Audit absent — verify existence |
+
+**Action remaining:**
+- Resolve limo Program ID (still TBD)
+- Verify Leverage product scope + repo existence
+- Resolve kliquidity repo path
+
+### 📚 SDK & Reference (NOT in scope, tapi useful untuk context)
+
+| Repo | Purpose |
+|---|---|
+| [klend-sdk](https://github.com/Kamino-Finance/klend-sdk) | TypeScript SDK for lending |
+| [kliquidity-sdk](https://github.com/Kamino-Finance/kliquidity-sdk) | TypeScript SDK for liquidity |
+| [limo-sdk](https://github.com/Kamino-Finance/limo-sdk) | TypeScript SDK for limit orders |
+| [farms-sdk](https://github.com/Kamino-Finance/farms-sdk) | TypeScript SDK for farms |
+| [pyth-lazer-public](https://github.com/Kamino-Finance/pyth-lazer-public) | Pyth Lazer oracle integration |
+| [audits](https://github.com/Kamino-Finance/audits) | 40 audit report PDFs — ✅ Cloned to audits-repo |
+
+---
+
+## 3. Audit Coverage Map — ACCURATE DATA (40 PDFs)
+
+Source: `/mnt/c/Users/USER/bounty-notes/kamino/audits-local/` (40 PDFs + 40 .txt)
+
+### 📊 Component-Level Saturation Matrix
+
+| Component | Total Audits | Certora FV | Saturation | Priority Impact |
+|---|---|---|---|---|
+| **klend** | **20** | **6 versions (1.13.0 → 1.17.0)** | 🔴 BRICK WALL | Skip cores, hunt **post-1.17.0 gap** |
+| **kvault** | **9** | Base + 2.1.0 + vault_rewards | 🔴 EXTREME | Hunt vault_rewards edge + post-2.1.0 |
+| **limo** | 4 | 1 (Certora FV) | 🔴 EXTREME | Skip cores, only integration |
+| **scope** | 3 | 0 | 🟡 HEAVY | Oracle edge cases worth investigating |
+| **kliquidity** | 2 | **1 (Certora FV!)** | 🟡 HEAVY | Was misclassified Tier 1 — demoted |
+| **kfarms** | 2 | **0** | ⚫ **CLOSED Apr 25** | **54 angles 0 promoted — saturated** |
+| **Leverage** | 0 visible | 0 | ❓ UNKNOWN | Verify scope first |
+
+### 📋 Full Audit Inventory Per Component
+
+#### klend (20 audits) — 🔴 BRICK WALL
+
+Version-by-version Certora formal verification tracking every release:
+
+| File | Audit Type |
+|---|---|
+| `kamino_klend_sec3.pdf` | Sec3 initial |
+| `kamino_lend_ackee_blockchain_fuzz_tests.pdf` | Ackee fuzz tests |
+| `kamino_lend_certora.pdf` | Certora FV base |
+| `kamino_lend_certora_1.13.0.pdf` | Certora FV v1.13.0 |
+| `kamino_lend_certora_1.13.1.pdf` | Certora FV v1.13.1 |
+| `kamino_lend_certora_1.14.0.pdf` | Certora FV v1.14.0 |
+| `kamino_lend_certora_1.15.0.pdf` | Certora FV v1.15.0 |
+| `kamino_lend_certora_1.16.0.pdf` | Certora FV v1.16.0 |
+| `kamino_lend_certora_1.17.0.pdf` | Certora FV v1.17.0 |
+| `kamino_lend_min_value_1.14.1.pdf` | Min value review v1.14.1 |
+| `kamino_lend_offside_1.13.0.pdf` | Offside Labs v1.13.0 |
+| `kamino_lend_offside_1.13.1.pdf` | Offside Labs v1.13.1 |
+| `kamino_lend_offside_1.14.0.pdf` | Offside Labs v1.14.0 |
+| `kamino_lend_osec_formal_verification.pdf` | Ottersec FV |
+| `kamino_lend_ottersec.pdf` | Ottersec base |
+| `kamino_lend_ottersec_1.13.0.pdf` | Ottersec v1.13.0 |
+| `kamino_lend_ottersec_1.13.1.pdf` | Ottersec v1.13.1 |
+| `kamino_lend_ottersec_1.15.0.pdf` | Ottersec v1.15.0 |
+| `kamino_lend_ottersec_1.16.0_and_1.17.0.pdf` | Ottersec v1.16.0 + v1.17.0 |
+| `kamino_lend_rx.pdf` | Runtime Verification |
+
+**⚠️ Audit version coverage ends at 1.17.0** (March 2026 latest). Current deploy version on-chain? Required Pre-Activation Check sebelum T1P1 deep-dive (Section 4.5). Kalau HEAD > 1.17.0 = legitimate audit-gap. Kalau HEAD == 1.17.0 = no gap, T1P1 falsified.
+
+#### kvault (9 audits) — 🔴 EXTREME
+
+| File | Audit Type |
+|---|---|
+| `kamino_vault_ackee-blockchain.pdf` | Ackee |
+| `kamino_vault_certora.pdf` | Certora FV base |
+| `kamino_vault_certora_2.1.0.pdf` | Certora FV v2.1.0 |
+| `kamino_vault_certora_vault_rewards.pdf` | **Certora FV vault_rewards** (new feature) |
+| `kamino_vault_offside_labs.pdf` | Offside Labs |
+| `kamino_vault_osec.pdf` | Ottersec base |
+| `kamino_vault_osec_vault_rewards.pdf` | **Ottersec vault_rewards** (new feature) |
+| `kamino_vault_ottersec_2.1.0.pdf` | Ottersec v2.1.0 |
+| `kamino_vault_sec3.pdf` | Sec3 |
+
+**vault_rewards = new feature** with dedicated audit (2 rounds: Certora + Ottersec). Signals recent addition — edge cases / interaction with main vault logic worth checking. **Post-2.1.0 code gray zone** sama seperti klend.
+
+#### limo (4 audits) — 🔴 EXTREME
+
+| File | Audit Type |
+|---|---|
+| `kamino_limo_audit_formal_verification_certora.pdf` | Certora FV |
+| `kamino_limo_audit_offside_labs.pdf` | Offside Labs |
+| `kamino_limo_audit_ottersec.pdf` | Ottersec |
+| `kamino_limo_audit_sec3.pdf` | Sec3 |
+
+#### scope (3 audits) — 🟡 HEAVY (no FV!)
+
+| File | Audit Type |
+|---|---|
+| `kamino_scope-offside_labs.pdf` | Offside Labs |
+| `kamino_scope_ottersec.pdf` | Ottersec |
+| `kamino_scope_sec3.pdf` | Sec3 |
+
+**No formal verification** — oracle edge cases (stale price, rounding, fallback logic) potential angle.
+
+#### kliquidity (2 audits + Certora FV) — 🟡 HEAVY
+
+| File | Audit Type |
+|---|---|
+| `kamino_liquidity_audit_certora.pdf` | **Certora FV** |
+| `kamino_liquidity_audit_ottersec.pdf` | Ottersec |
+
+**⚠️ CORRECTION from v1 mapping:** Ternyata ada Certora FV — bukan "fresh ground" seperti assumption awal. Demoted from Tier 1 to Tier 2.
+
+#### kfarms (2 audits, no FV) — ⚫ **CLOSED Apr 25**
+
+| File | Audit Type |
+|---|---|
+| `kamino_farms-offside_labs.pdf` | Offside Labs (Dec 2023) |
+| `kamino_farms_ottersec.pdf` | Ottersec |
+
+**Closure protocol (Apr 25, 2026):**
+- 3-layer convergence: L1 manual + L2 sanbir solana-auditor + L3 sec3 X-Ray Docker LLVM-IR
+- 54 angles enumerated, 0 promoted to PoC, 0/2 submits
+- Mathematical saturation per `sc-audit-solana v4.1` Pattern AA
+- Patterns X/Y/Z/AA migrated to skill v4.1 (Apr 28 codify session)
+
+**⚠️ DO-NOT-REVISIT** unless revival sub-conditions hit:
+- kfarms code version >v1.6.5 (refresh/set_stake additions)
+- Deployment shift T22 detected
+- New auditor publishes (not OtterSec/Offside)
+- Substantive klend↔kfarms integration changes
+
+---
+
+## 4. Research Priority Queue (REVISED v3)
+
+### 🟢 Tier 1 — FRESH GROUND (Target HERE first)
+
+| Priority | Target | Rationale |
+|---|---|---|
+| **P1** ⚡ | **klend post-1.17.0 release** | Audit version coverage stops at 1.17.0. Any HEAD commit / release > v1.17.0 = audit-gap. **REQUIRES Pre-Activation Check (§4.5)** |
+| **P2** | **kvault vault_rewards post-audit** | Dedicated new-feature audit (2 rounds). Integration edge cases worth checking. |
+| **P3** | **Leverage product** | Audit absent — verify scope & repo. Could be fresh ground or out-of-scope. |
+| **P4** | **Cross-module integration via Primacy of Impact** | klend × kvault, klend × scope, limo × klend — Primacy buka path "Critical via X yang OOS-listed tapi causes in-scope impact" |
+
+### 🟡 Tier 2 — MODERATE (Target kalau Tier 1 exhausted)
+
+| Priority | Target | Rationale |
+|---|---|---|
+| **P5** | **scope (Oracle aggregator)** | 3 audits, **no formal verif**. Oracle edge cases historically high-impact. |
+| **P6** | **kliquidity non-invariant paths** | Has Certora FV, but FV cover specific invariants only — non-covered paths bisa gap |
+
+### 🔴 Tier 3 — SKIP (Unless NEW pattern from XRPL/K2/post-mediation context)
+
+| Priority | Target | Rationale |
+|---|---|---|
+| P7 | klend cores | **20 audits + 6 FV versions** — absolute brick wall |
+| P8 | kvault cores | 9 audits + multi-round Certora FV (base + 2.1.0 + vault_rewards) |
+| P9 | limo cores | Certora FV covers execution invariants |
+
+### ⚫ CLOSED (Saturated, do-not-revisit)
+
+| Component | Closure Date | Reason |
+|---|---|---|
+| **kfarms** | Apr 25, 2026 | 54 angles, 0 promoted, 0/2 submits, 3-layer saturation |
+
+---
+
+## 4.5. Pre-Activation Check — T1P1 (klend post-1.17.0)
+
+**Sebelum dispatch ke Phase 0.5/0.7/1, WAJIB jalankan check ini.** Tujuan: verify ada genuine audit-gap di klend HEAD vs audit boundary v1.17.0.
+
+### Step 1 — On-chain deployed version
+
+```bash
+# Install once
+cargo install query-security-txt
+
+# Query klend program
+query-security-txt KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD
+```
+
+Extract:
+- `source_revision` (commit SHA / tag)
+- `auditors` (cross-check vs audits-local/klend/)
+- `policy`, `contacts`
+
+Cross-check `source_revision` vs:
+- `cd repos/klend && git log --tags --simplify-by-decoration --pretty="%h %d %s" | head -20`
+
+### Step 2 — Repo HEAD version vs v1.17.0 boundary
+
+```bash
+cd /mnt/c/Users/USER/bounty-notes/kamino/repos/klend && \
+  git pull origin master && \
+  git tag --list 'release/v*' --sort=-creatordate | head -10 && \
+  git log --oneline release/v1.17.0..HEAD 2>/dev/null | wc -l
+```
+
+Decision tree:
+- **HEAD == v1.17.0 (no commits beyond)** → T1P1 FALSIFIED. Promote T1P2 (kvault vault_rewards) to active. Skip Phase 0.5 klend.
+- **HEAD > v1.17.0 with commits** → T1P1 ACTIVATED. Count + character of commits inform Phase 0.5 sliding-depth budget.
+- **HEAD has unreleased tags (e.g. v1.18.0+)** → T1P1 STRONG. Diff target = `git diff release/v1.17.0..HEAD -- programs/klend/src/`.
+
+### Step 3 — Diff surface inventory
+
+```bash
+# Per-file change count
+git diff --stat release/v1.17.0..HEAD -- programs/klend/src/ | sort -k3 -n -r | head -30
+
+# New files added post-audit
+git diff --name-only --diff-filter=A release/v1.17.0..HEAD -- programs/klend/src/
+
+# Modified handler functions
+git diff release/v1.17.0..HEAD -- programs/klend/src/handlers/ | grep -E "^(\+\+\+|---)"
+```
+
+Output → input ke Phase 0.5 manual mapping target list.
+
+### Step 4 — Decision gate
+
+| Result | Action |
+|---|---|
+| 0 commits post-v1.17.0 | T1P1 falsified → activate T1P2 kvault vault_rewards |
+| 1-50 commits, peripheral changes | T1P1 marginal — cap budget 1 day, narrow focus to specific modules |
+| 50+ commits OR new handler family | T1P1 strong — full Phase 0.5 (3-4h cap) → 0.7 sanbir + sec3 X-Ray |
+
+---
+
+## 5. Research Status Matrix
+
+Legend: 🔴 Unresearched • 🟡 In-progress • 🟢 Covered (cleared, no finding) • ⚫ Parked/Closed • ❌ Red (verified hardened) • 💎 Finding candidate
+
+| Module | Tier | Status | Hours | Finding | Sub-Path Notes | Last Session |
+|---|---|---|---|---|---|---|
+| **klend post-1.17.0 release** | T1 P1 | 🔴 | 0 | — | **NEEDS Pre-Activation Check (§4.5) BEFORE deep-dive** | — |
+| kvault vault_rewards edges | T1 P2 | 🔴 | 0 | — | Check dedicated audits first, then grep for post-audit changes | — |
+| Leverage product | T1 P3 | 🔴 | 0 | — | Verify repo + scope existence first | — |
+| Primacy cross-program chains | T1 P4 | 🔴 | 0 | — | Method (causal-chain framing), not single target | — |
+| scope edge cases | T2 P5 | 🔴 | 0 | — | No FV — stale price, rounding, fallback | — |
+| kliquidity non-FV paths | T2 P6 | 🔴 | 0 | — | FV covers invariants, not all paths | — |
+| klend core | T3 P7 | ❌ | 0 | — | **SKIP — 20 audits + 6 FV versions** | — |
+| kvault core | T3 P8 | ❌ | 0 | — | **SKIP — 9 audits + multi-round FV** | — |
+| limo core | T3 P9 | ❌ | 0 | — | **SKIP — Certora FV invariants** | — |
+| **kfarms** | — | ⚫ | ~30h | 0/2 submits | **CLOSED Apr 25 — 54 angles 0 promoted, 3-layer saturation** | Session 1 (Apr 21-25) |
+
+**Update rule:** Setiap sesi riset, update status + hours + sub-path notes. Rule (h) dari Memory: red hypothesis tidak di-revisit tanpa NEW pattern.
+
+---
+
+## 6. Known Issues & Exclusions (CRITICAL — avoid dup)
+
+### Dup-Check Workflow (MANDATORY sebelum submit)
+
+Dengan 40 .txt files sudah ready, dup-check sekarang fast:
+
+```bash
+# Contoh dup-check per component
+grep -r -i "candidate_phrase" /mnt/c/Users/USER/bounty-notes/kamino/audits-local/klend/*.txt
+
+# Dup-check semua komponen sekaligus
+grep -r -i "candidate_phrase" /mnt/c/Users/USER/bounty-notes/kamino/audits-local/**/*.txt
+```
+
+**Narrow-phrase discipline (V12 fingerprint method):**
+- Gunakan 3-5 kata spesifik dari hipotesis lo
+- JANGAN broad keyword seperti "reentrancy", "overflow" — terlalu umum
+- Check title + description + fix status per hit
+- Kalau ada match = KILL hypothesis (rule (h))
+
+### Program Exclusions (Immunefi scope page)
+
+**Prohibited activities:**
+- ❌ Testing on mainnet/testnet (use local-forks only)
+- ❌ Testing pricing oracles or 3rd-party SC
+- ❌ Social engineering (phishing, etc)
+- ❌ DoS against project assets
+- ❌ Automated traffic-generating tests
+- ❌ Public disclosure of unpatched vulnerability
+
+**Program-specific OOS:**
+- Token 22 issues without irrecoverable loss (admin willingly onboards t22 with extensions)
+- Supply/borrow level manipulation to disturb interest rates
+- Loss-of-fees (origination, flash borrow)
+- Referral fees (disabled mainnet)
+- **Config states ≠ default/current deployed** (Decision Rule 14, kfarms `is_farm_frozen` lesson)
+
+### Built-in Scope Caveats
+
+- **Upgradable/pausable contract** → only initial attack counted
+- **Critical at-risk <$50K** → auto-downgrade ke High
+- **Temp freezing <9,000 blocks** → downgrade ke Medium (if ≥$100K) atau Low
+- **Primacy of Rules only** untuk Medium SC dan Web High
+
+---
+
+## 7. Submission Gate Pre-Check (bounty-lessons v2.6 integration)
+
+Sebelum submit ANY finding, run:
+
+1. **Gate 1 — Primacy of Impact check:** Apakah impact actually hits in-scope category?
+2. **Gate 2 — Audit dup check:** Grep narrow-phrase di 40 .txt files. Kalau hit = KILL.
+3. **Gate 3 — Feasibility filter:** Bisa execute di mainnet tanpa special assumption?
+4. **Gate 4 — Severity math:** Critical butuh ≥$50K at-risk. High butuh ≥$5K. Medium butuh temp freeze ≥$100K & ≥9,000 blocks.
+5. **Gate 5 — 45 FP patterns (bounty-lessons v2.6):** Run Invalidation Cross-Check.
+6. **Gate 5.5 — security.txt verification (Solana, sc-audit-solana v4.1):** Confirm auditor coverage via query-security-txt; kill if auditor covered finding.
+7. **Gate 6 — Deployment-State Check:** Kalau finding is config-gated, verify N>0 instances deployed mainnet.
+
+**Auto-trigger reactive (per memory):** User tanya validasi ("valid?", "in scope?", "cek rules") → run Gate 1-6 + Pre-Submit Checklist + Invalidation Cross-Check SEBELUM jawab.
+
+**Auto-trigger proactive:** Saat Claude identify finding candidate → run Gate 1-6 + Invalidation Cross-Check SEBELUM elaborate analysis/PoC.
+
+---
+
+## 8. Session Log
+
+### Session 0 — Apr 20, 2026 (Phase 0 Scope Mapping)
+
+**Duration:** ~2 jam (cek platform bounty → pivot decision → scope + folder setup)
+
+**Accomplishments:**
+- Platform bounty delta scan (Firedancer ruled out karena skill misfit)
+- Stake mechanics Sherlock diklarifikasi ($250 untuk H/C, tidak untuk M/L)
+- Kamino scope fully fetched dari Immunefi (17 assets at that time)
+- 40 audit PDFs downloaded + categorized per 6 komponen
+- 40 PDFs converted to .txt via pdftotext (dup-check ready)
+- Master mapping v2 created
+- GitHub repos cloned: klend, scope, kvault, limo, audits-repo
+- WSL MTU fix applied (persistent via /etc/rc.local + .bashrc + sudoers.d)
+
+**Key corrections from initial estimate:**
+- PDFs count: 21 → **40** (GitHub page only showed top-level)
+- kliquidity: Tier 1 P1 → Tier 2 P7 (has Certora FV)
+- farms: Tier 2 → **Tier 1 P1** (fresh ground confirmed)
+- klend: audits 6 → **20** including 6 version-specific Certora FV
+
+### Session 1 — Apr 21-25, 2026 (T1P1 kfarms execution + closure)
+
+**Duration:** ~30 jam across 5 days
+
+**Accomplishments:**
+- kfarms repo cloned + Phase 0.5 manual mapping
+- 54 attack angles enumerated across kfarms surface
+- L1 manual review → 0 promoted candidates passing Gate 1-5
+- L2 sanbir solana-auditor 8-agent scan → 0 new promoted
+- L3 sec3 X-Ray Docker LLVM-IR → 0 new promoted (1 "untrustful account" flag → killed via Pattern AA internal-helper grep)
+- 0/2 submission slots used → CLOSED Apr 25 (saturation confirmed mathematically per `sc-audit-solana v4.1`)
+
+**Output:**
+- `bounty-notes/kamino/findings/kfarms-closure.md` (54 angles documented)
+- Patterns X/Y/Z/AA migrated to `sc-audit-solana v4.1` skill (Apr 28 codify)
+- Closure note dengan revival conditions: >v1.6.5 / deployment shift T22 / new auditor / klend changes
+
+### Session 2 — Apr 28, 2026 (Codify session)
+
+**Duration:** ~3 jam
+
+**Accomplishments:**
+- 31 patterns codified across 3 skills:
+  - `sc-audit-evm v4.1` (17 EVM patterns)
+  - `sc-audit-common v4.2` (13 chain-agnostic + Sui/Aptos tier patterns)
+  - `sc-audit-solana v4.1` (X/Y/Z/AA from kfarms closure)
+- Codify mechanism activated dengan 4 phase trigger points (proactive append to `_codify-queue.md`)
+- Pattern queue cleanup: BB DEFERRED, CC ✅ codified, DD ✅ skipped (subsumed by Gate 1-5)
+
+### Session 3 — Apr 29, 2026 (Revival check + v3 mapping)
+
+**Duration:** ~1 jam
+
+**Accomplishments:**
+- Phase -1 Pattern O premise check on Kamino post-T1P1 closure
+- Immunefi scope page Last Updated 28 Apr 2026 verified (was 16 Oct 2025)
+- Asset count 17→19 = +2 Primacy of Impact placeholder rows (SC + W&A), bukan asset baru
+- Critical correction: v1.16/v1.17 audits NOT new (already in audits-local Apr 20)
+- Real revival driver: T1P2 (klend post-1.17.0) declared Apr 20 belum dieksekusi → promoted to T1P1
+- Pre-Activation Check protocol designed (§4.5) — verify klend HEAD > v1.17.0 BEFORE deep-dive
+- v3 mapping generated
+
+**Status end-of-session:** v3 mapping complete. Awaiting Pre-Activation Check execution.
+
+### Session 4 — [Pending]
+
+**Planned:**
+- [ ] Run Pre-Activation Check §4.5 (query-security-txt + repo HEAD diff)
+- [ ] Decision gate: T1P1 ACTIVATED / FALSIFIED
+- [ ] If activated: Phase 0.5 manual mapping sliding-depth (3-4h cap) on klend post-1.17.0 surface
+- [ ] If falsified: pivot to T1P2 kvault vault_rewards verification
+
+---
+
+## 9. Next Session Handoff Template
+
+Copy-paste block untuk fresh chat:
+
+```
+Lanjut Kamino bounty research — resume dari mapping v3.
+
+═══ CONTEXT ═══
+- Platform: Immunefi (rolling, $1.5M max, $150K Critical floor, Medium flat $10K)
+- Stake: $0 | KYC: ✅ done
+- Deadline: None (rolling)
+- Last scope update: 28 Apr 2026 (Primacy of Impact placeholder added 29 Apr — admin)
+
+═══ MASTER MAP ═══
+File: C:\Users\USER\bounty-notes\kamino\kamino-research-mapping.md (v3)
+40 audit PDFs + 40 .txt di: bounty-notes/kamino/audits-local/ (6 subfolders)
+Repos cloned: bounty-notes/kamino/repos/ (klend, scope, kvault, limo, kfarms, audits-repo)
+Status matrix: See section 5
+Closed components: kfarms ⚫ (Apr 25 saturation, 54 angles)
+
+═══ LAST SESSION ═══
+Session 3 Apr 29 (v3 mapping post-T1P1 closure, Pre-Activation Check protocol designed).
+
+═══ CURRENT TARGET ═══
+[PILIH SALAH SATU]
+- T1P1 ⚡: klend post-1.17.0 — REQUIRES Pre-Activation Check §4.5 first
+- T1P2: kvault vault_rewards edge cases (fallback if T1P1 falsified)
+- T1P3: Leverage product scope verification
+- T1P4: Primacy cross-program causal chains (method)
+
+═══ TASK ═══
+[Spesifik apa yang mau di-gas]
+
+═══ RULES ACTIVE ═══
+- HARD LOCK: max 2 submit, Medium target first, Gate 1-6 enforced
+- bounty-lessons v2.6 auto-trigger pada finding candidate
+- kfarms ⚫ DO-NOT-REVISIT (54 angles already saturated)
+- Red hypothesis tidak revisit tanpa NEW pattern
+- Narrow-phrase dup-check SEBELUM PoC (grep di audits-local/**/*.txt)
+- Soft cap total Kamino: 10 hari. Tier 1: 5 hari max.
+
+═══ DUP-CHECK COMMAND ═══
+grep -r -i "candidate_phrase" bounty-notes/kamino/audits-local/[component]/*.txt
+
+Gas.
+```
+
+---
+
+## 10. Quick Reference — Mainnet Program IDs
+
+| Program | ID |
+|---|---|
+| klend | `KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD` |
+| kvault | `KvauGMspG5k6rtzrqqn7WNn3oZdyKqLKwK2XWQ8FLjd` |
+| kfarms | `…TpmMrAZrC7S7vJa91Hr` (suffix only — full ID dari Immunefi solscan link) |
+| kliquidity | `…AmQNZKBdY8s47dehDc` (suffix only) |
+| scope (Onchain) | `…29ikn4yTuPa9MF2fWJ` (suffix only) |
+| Oracle interfaces | 8 sub-programs (Adrena, Switchboard, Securitize, RedStone, JUP, Meteora, SBoD, Onchain) |
+| limo | TBD — resolve next session |
+| Leverage | TBD — verify existence next session |
+
+---
+
+## 11. Decision Framework (Timing Caps)
+
+Rules dari K2 lessons adapted untuk Kamino:
+
+1. **Tier 1 gets 5 days max.** Kalau 5 hari no candidate → pivot ke Tier 2.
+2. **Tier 2 gets 3 days max.** Kalau no candidate → pivot platform lain atau park.
+3. **Tier 3 only dengan NEW pattern.** New primitive dari XRPL/K2 context → try.
+4. **Total soft cap Kamino:** 10 hari. Kalau 10 hari zero Medium candidate → close Kamino chapter, pivot ke platform berikutnya.
+5. **kfarms revival sub-conditions.** Tidak revisit unless: kfarms code >v1.6.5 (refresh/set_stake additions) / deployment shift T22 / new auditor / substantive klend↔kfarms integration changes.
+
+---
+
+## 12. Pivot Triggers (Kill Conditions)
+
+Close Kamino chapter kalau:
+
+- [ ] 10 hari research, 0 Medium candidate passes Gate 1-6
+- [ ] 3 Medium submissions all rejected (Zest-style pattern at Immunefi)
+- [ ] T1P1 Pre-Activation Check FALSIFIES → all subsequent T1 also falsified (cascade)
+- [ ] Fresh Sherlock/C4 contest launches dengan pool ≥$500K + <10 audits
+- [ ] User decision: fokus mediation result XRPL (~May 11)
+
+---
+
+## 13. Key Lessons
+
+**Lesson 1 (Apr 20): Verify raw data SEBELUM build mapping.** GitHub page view (21 PDFs visible) ≠ actual clone (40 PDFs). Always `git clone` + `find` + `ls` before priority queue. Codified per Pattern (a) of MFD.
+
+**Lesson 2 (Apr 25): Single-layer Solana audit is premature closure.** kfarms closed only after 3-layer convergence (manual + sanbir + sec3 X-Ray). Pattern AA codified: sec3 "untrustful account" flag → grep handler body for internal helper validators before accepting.
+
+**Lesson 3 (Apr 29): Scope page metadata changes ≠ substantive revival signals.** Immunefi page Last-Updated bump can be admin reaffirmation (Primacy of Impact placeholder), not new ground. Verify each "trigger" against actual audits-local + repo state before declaring revival. Pattern O (context-template stale premise check) applied.
+
+**Lesson 4 (Apr 29): Audit version boundary is the real revival anchor.** klend audit ends at v1.17.0 — the question that matters is repo HEAD vs v1.17.0 boundary, NOT bounty-page metadata. Pre-Activation Check (§4.5) operationalizes this discipline.
+
+---
+
+## 14. Tools Status (v2.9 stack)
+
+**Active tools (per `tools-reminder v1.7`):**
+
+| Tool | Phase | Path | Solana applicability |
+|---|---|---|---|
+| `sanbir solana-auditor` | Phase 0.7 | `~/.claude/skills/solana-auditor/` (@e501915 v4 pashov-arch) | ✅ 8 agents + Agent 9 opus |
+| `sec3 X-Ray` | Phase 0.7 cross-validator | Docker LLVM-IR scanner, 18 SEV rules | ✅ used Apr 25 kfarms closure |
+| `query-security-txt` | Phase 1 mandatory | `cargo install query-security-txt` | ✅ §4.5 Pre-Activation |
+| `clone-external` | Phase 1 EVM | `~/.claude/skills/clone-external/` | ❌ EVM only, N/A here |
+| `foundry-poc-mainnet-fork` | Phase 2 EVM | `~/.claude/skills/foundry-poc-mainnet-fork/` | ❌ EVM only |
+| `pashov x-ray + solidity-auditor` | Phase 0.5+0.7 EVM | `~/.claude/skills/x-ray/` + `solidity-auditor/` | ❌ Solidity only |
+
+**Solana Phase 2 PoC options (not skills, native tools):** anchor test, bankrun, LiteSVM, Mollusk.
+
+---
+
+## Changelog
+
+| Date | Change |
+|---|---|
+| Apr 20, 2026 (v1) | Initial mapping created based on GitHub page view (21 PDFs estimated) |
+| Apr 20, 2026 (v2) | **REVISED** — actual clone shows 40 PDFs. Priority queue re-ranked: farms up to Tier 1 P1, kliquidity demoted to Tier 2 P7. Added version-by-version audit tracking for klend + kvault. Added klend post-1.17.0 audit gap as Tier 1 P2 target. |
+| Apr 29, 2026 (v3) | **POST-CLOSURE REVISION** — kfarms ⚫ CLOSED Apr 25 (54 angles, 3-layer saturation). T1P2 klend post-1.17.0 promoted to T1P1. Re-tier P3-P5. Added §4.5 Pre-Activation Check protocol (mandatory before T1P1 dispatch). Added §4.6 kfarms closure block. Added Sessions 1-3 log. Added §14 Tools Status v2.9 stack. Lessons 2-4 added. Immunefi scope Last Updated bump (28 Apr) noted as admin reaffirmation, not substantive revival signal. |
