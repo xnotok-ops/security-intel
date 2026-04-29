@@ -4265,3 +4265,177 @@ sound at the source-code level. Proceed to:
 - Run 01-build-poc.sh to scaffold PoC test file
 - Save this verification-result.md to `bounty-notes/kamino/sessions/`
 - Update `phase-0.7-sanbir-klend-v119.md` Finding #1 → status: VERIFIED-FULL
+Lanjut Finding #1 PoC build via surfpool mainnet-fork. Verification PASSED, framework decision LOCKED, ready for surfpool setup + exploit script crafting.
+
+═══ STATE (Apr 29 2026) ═══
+- Finding #1: Rug-by-borrow-order, sanbir confidence 90, severity CRITICAL
+- Source verification PASSED 8/8 (commit 95d694b release/v1.19.0)
+- Framework: surfpool mainnet-fork TypeScript exploit script
+- Klend deployed: GzFgdRJXmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW (mainnet Apr 24, slot 415332643)
+- HP 136, Tier 1, Immunefi (NO submit cap)
+
+═══ ALREADY DONE ═══
+✅ Phase 0.5 manual mapping (bounty-notes/kamino/manual-mapping-klend-v119.md)
+✅ Phase 0.7 sanbir convergence (bounty-notes/kamino/sessions/phase-0.7-sanbir-klend-v119.md, 23 findings)
+✅ Source verification 8/8 (bounty-notes/kamino/sessions/finding-1-verification-passed.md)
+✅ Klend test infra confirmed BARE (no working TS, no Rust unit tests, no SDK)
+✅ Decision: surfpool mainnet-fork is correct path (not Anchor TS, not Rust unit test)
+
+═══ FINDING #1 EXPLOIT CHAIN ═══
+
+T0: Setup — fork mainnet, find existing healthy obligation OR create new one
+T1: SELLER initiate_obligation_ownership_transfer(pending_owner=VICTIM)
+    → state: None → Initiated, pending_owner = VICTIM
+T2: GLOBAL_ADMIN approve_obligation_ownership_transfer
+    → state: Initiated → Approved (no_active_borrow_orders_check passes — clean)
+T3: SELLER set_borrow_order(filled_debt_destination=ATTACKER_TA, max_rate_bps=u32::MAX,
+                            remaining_debt_amount=large_value)
+    → ⚠️ CRITICAL: handler_set_borrow_order has NO transfer-state guard
+    → BorrowOrder populated, transfer state still Approved
+T4: BOT (anyone) fill_borrow_order
+    → CPI to borrow_obligation_liquidity_process_impl
+    → proceeds → ATTACKER_TA via filled_debt_destination constraint
+    → On full fill: *borrow_order = BorrowOrder::default() (line 171)
+T5: VICTIM accept_obligation_ownership_transfer
+    → obligation_has_no_active_borrow_orders_check PASSES (order self-cleared)
+    → owner = VICTIM, debt remains, attacker keeps proceeds
+
+═══ KEY SOURCE REFS (verified 8/8) ═══
+
+- programs/klend/src/state/borrow_order_operations.rs:171
+  → *borrow_order = BorrowOrder::default()  // self-clear semantic
+
+- programs/klend/src/handlers/handler_fill_borrow_order.rs:115
+  → let owner = payer.clone()  // payer aliasing
+
+- programs/klend/src/handlers/handler_fill_borrow_order.rs:195-198
+  → address = obligation.load()?.borrow_order.filled_debt_destination
+  → token::authority = obligation.load()?.owner
+
+- programs/klend/src/lending_market/lending_checks.rs:875
+  → if obligation.borrow_order != Default::default()  // hygiene check
+
+- programs/klend/src/handlers/handler_accept_obligation_ownership_transfer.rs:23-27
+  → precondition_checks + check_ownership_transfer_approved
+
+- programs/klend/src/handlers/handler_set_borrow_order.rs:50,53
+  → owner: Signer + has_one = owner (NO transfer-state guard absence confirmed)
+
+═══ FRAMEWORK SETUP REQUIRED ═══
+
+surfpool not installed. Install commands needed:
+- Likely: cargo install surfpool OR brew/curl installer
+- Reference: https://docs.surfpool.run/ (or equivalent)
+- Alternative: cloned localnet via solana-test-validator with --clone flag
+
+Exploit script needs:
+- TypeScript (preferred — matches klend's package ecosystem)
+- @coral-xyz/anchor + @solana/web3.js
+- klend IDL → fetched from mainnet via anchor idl fetch
+- 5 keypairs: SELLER, VICTIM, GLOBAL_ADMIN, BOT, ATTACKER_TA owner
+
+═══ CRITICAL CHALLENGES (anticipate) ═══
+
+1. GLOBAL_ADMIN signature in T2:
+   - Real global_admin = a Kamino-controlled key on mainnet
+   - Mainnet-fork CAN'T have us sign as their key
+   - SOLUTION: surfpool/litesvm allows airdrop + force-set authority via state mutation
+     OR: clone GlobalConfig account and modify global_admin field to test keypair
+
+2. Existing healthy obligation:
+   - Either find one via getProgramAccounts filter
+   - Or init fresh one (requires market admin coordination = can't on real mainnet)
+   - SOLUTION: create new obligation as SELLER, deposit collateral
+
+3. Reserve liquidity for T4 borrow:
+   - Need reserve with available borrowable liquidity
+   - Mainnet-fork has real state — pick popular reserve (USDC, SOL, USDT)
+
+4. token::authority constraint:
+   - ATTACKER_TA must have obligation.owner as authority (= SELLER at T3 time)
+   - SELLER controls TA they own — natural
+
+═══ NEXT STEPS ORDERED ═══
+
+1. Install surfpool (or equivalent mainnet-fork tool — could be litesvm + clone, solana-test-validator --clone)
+2. Init TypeScript project in pocs/poc-finding-1-rug-by-borrow-order/exploit/
+3. Fetch klend IDL: anchor idl fetch GzFgdRJXmawPhGeBsyRCDLx4jAKPsvbUqoqitzppkzkW
+4. Setup 5 keypairs + airdrop
+5. Pick mainnet target market + reserve (likely SOL/USDC main market)
+6. Override GlobalConfig.global_admin with test keypair (state surgery)
+7. Init obligation owned by SELLER + deposit
+8. Implement T1 (initiate)
+9. Implement T2 (approve as test global_admin)
+10. Implement T3 (set_borrow_order with attacker_TA destination)
+11. Implement T4 (fill_borrow_order)
+12. Implement T5 (accept)
+13. Assert final state — attacker_TA balance increase, victim owns obligation w/ debt
+14. Reproducibility: 3 runs in fresh fork
+15. Capture decode trace for submission
+
+═══ FILES READY ═══
+
+- bounty-notes/kamino/pocs/poc-finding-1-rug-by-borrow-order/
+  - README.md (workflow + kill conditions)
+  - 00-verify.sh + verification-result.md (PASSED 8/8)
+  - 01-build-poc.sh (deprecated for surfpool path, archived)
+  - poc-template-rust-DEPRECATED.rs (kept for reference, NOT used)
+  - success-result.md template
+  - fail-result.md template
+
+═══ WHAT WAS WRONG WITH RUST PATH ═══
+
+- Klend repo has empty Rust dev-dependencies
+- No Rust integration tests anywhere
+- TS test (klend.ts) is 520-byte STUB — broken `initialize()` method that doesn't exist in v1.19
+- No SDK/client directory
+- No build artifacts (target/idl/, target/types/ missing)
+
+Conclusion: Build TS test infra from scratch = same effort as surfpool. Surfpool wins
+for submission credibility ("PoC reproduces against deployed mainnet bytecode").
+
+═══ REPORT WRITING REMINDERS ═══
+
+- bounty-lessons v2.6 anti-slop standards
+- Verbatim judging-rule citations (v2.2)
+- No em-dashes in narrative prose
+- Quotes only for: judging criteria, program spec, code snippets
+- One report per High/Critical finding
+- Per Immunefi format guidelines (research kemudian)
+
+═══ TASK ═══
+
+Phase 1 PoC build via surfpool mainnet-fork:
+1. Install surfpool (or pivot to alternative if fails)
+2. Scaffold TypeScript exploit script structure
+3. Implement T0-T5 incrementally with assertions per step
+4. Output: pocs/poc-finding-1-rug-by-borrow-order/exploit/ with working PoC
+
+═══ FIRST COMMAND (FRESH CHAT) ═══
+
+cd /mnt/c/Users/USER/bounty-notes/kamino/pocs/poc-finding-1-rug-by-borrow-order && \
+echo "=== Surfpool install attempt ===" && \
+curl -s https://surfpool.run/install.sh 2>&1 | head -50 ; \
+echo "" ; echo "=== Alternative: litesvm check ===" && \
+which solana-test-validator && solana-test-validator --version ; \
+echo "" ; echo "=== Anchor CLI version ===" && \
+which anchor && anchor --version
+
+═══ RULES ACTIVE ═══
+
+- bounty-workflow v2.9 (Phase 1 PoC build)
+- sc-audit-common v4.2 + sc-audit-solana v4.1
+- bounty-lessons v2.6 PRE-SUBMIT triggers (Gate 1-5 + V12 + Pre-Submit Checklist)
+- Codify queue active (10 patterns pending)
+- Token optimization: edit prompts, batch errors, fresh chat at 15-20 msgs
+- WSL gotchas: HEREDOC misparse, pager stuck, /mnt/user-data/outputs sandbox path
+- Memory active across context
+
+═══ DO-NOT-REVISIT ═══
+
+- Phase 0.5/0.7 conclusions (verified)
+- 8/8 source verification (locked)
+- TS klend.ts framework path (rejected — bare stub)
+- Rust unit test path (rejected — repo lacks dev-deps)
+
+Gas surfpool install + scaffold exploit.
