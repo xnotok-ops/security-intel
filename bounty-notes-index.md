@@ -4444,3 +4444,10 @@ Gas surfpool install + scaffold exploit.
 - bounty-notes/kamino/sessions/session-4-apr30-poc-build.md (M1-M6 RUG complete, surfpool 1.2.0 mainnet-fork)
 - bounty-notes/kamino/pocs/poc-finding-1-rug-by-borrow-order/exploit/src/ (15 TS files, real klend bytecode)
 - _codify-queue.md: appended 12 patterns AG..AR
+
+## 2026-04-30 — Kamino klend Finding #1 ARCHIVED (audit-acknowledged kill)
+- bounty-notes/kamino/sessions/session-5-apr30-finding1-killed.md (verdict + verbatim OtterSec SUG-01 evidence + revisit triggers)
+- _codify-queue.md: appended Pattern AS (Audit-Acknowledged Symptom Kills Root-Cause Reframe)
+- OtterSec OS-KLD-SUG-01 acknowledged covers entire H-X family (22 unguarded mutating handlers)
+- Kamino SECURITY.md redirects all security reports via Immunefi; disclosure SKIP (already-acknowledged)
+- Pipeline: kamino-klend T1P1 CLOSED do-not-resubmit-finding-1
