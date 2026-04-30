@@ -4439,3 +4439,8 @@ which anchor && anchor --version
 - Rust unit test path (rejected — repo lacks dev-deps)
 
 Gas surfpool install + scaffold exploit.
+
+## 2026-04-30 — Kamino klend Finding #1 PoC validated
+- bounty-notes/kamino/sessions/session-4-apr30-poc-build.md (M1-M6 RUG complete, surfpool 1.2.0 mainnet-fork)
+- bounty-notes/kamino/pocs/poc-finding-1-rug-by-borrow-order/exploit/src/ (15 TS files, real klend bytecode)
+- _codify-queue.md: appended 12 patterns AG..AR
