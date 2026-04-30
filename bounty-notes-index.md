@@ -4451,3 +4451,8 @@ Gas surfpool install + scaffold exploit.
 - OtterSec OS-KLD-SUG-01 acknowledged covers entire H-X family (22 unguarded mutating handlers)
 - Kamino SECURITY.md redirects all security reports via Immunefi; disclosure SKIP (already-acknowledged)
 - Pipeline: kamino-klend T1P1 CLOSED do-not-resubmit-finding-1
+- 2026-04-30 kamino/audits-local/kvault/kvault-audit-coverage-matrix.md — 46 findings catalogued across 9 audits, Pattern AS GOLD list, 2.1.1 diff inventory
+- 2026-04-30 kamino/audits-local/kvault/kvault-audit-coverage-matrix-v2.md — Path B 9/9 verified, 1 silent-mitigation found (Item #1), Path C #3 sub-theses E/F/G killed
+- 2026-04-30 kamino/kvault-session-4-handoff-2026-04-30.md — Session 4 handoff template + verified code anchors ledger
+2026-04-30 | kamino kvault phase07-sanbir output saved | audits-local/kvault/phase07-sanbir-2026-04-30.md
+2026-04-30 | kamino kvault Path 4 T1P4 kvault-side closure | matrix v2
