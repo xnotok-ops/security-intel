@@ -4464,3 +4464,4 @@ Gas surfpool install + scaffold exploit.
 - certik-stump TRULY CLOSED May 1 — Lite catch _availableLiquidity Medium, prize unachievable, save $29.13
 - certik-stump TRULY CLOSED May 1 (extended) — Vault uniform defense, $29 saved
 2026-05-01 | kamino T1P4.B limo×klend HARD KILL — no CPI integration confirmed
+2026-05-01 | kamino T1P4.A klend×scope SATURATED — 5 manual + 6 sanbir-framework, 0 promoted
