@@ -4456,3 +4456,6 @@ Gas surfpool install + scaffold exploit.
 - 2026-04-30 kamino/kvault-session-4-handoff-2026-04-30.md — Session 4 handoff template + verified code anchors ledger
 2026-04-30 | kamino kvault phase07-sanbir output saved | audits-local/kvault/phase07-sanbir-2026-04-30.md
 2026-04-30 | kamino kvault Path 4 T1P4 kvault-side closure | matrix v2
+- certik-stump/state-snapshot.md (May 1, plant L caught, pivot needed)
+- certik-stump/ (May 1 2026, Path C complete: 8 docs, 3 plants tested all caught, methodology codified)
+- certik-stump/state-snapshot.md (CLOSED May 1 — Branch B, 5.54 saved)
