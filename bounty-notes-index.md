@@ -4459,3 +4459,4 @@ Gas surfpool install + scaffold exploit.
 - certik-stump/state-snapshot.md (May 1, plant L caught, pivot needed)
 - certik-stump/ (May 1 2026, Path C complete: 8 docs, 3 plants tested all caught, methodology codified)
 - certik-stump/state-snapshot.md (CLOSED May 1 — Branch B, 5.54 saved)
+- skill-pattern-queue.md (May 1 — +2 Stump patterns: no-op-as-guard EVM, asymmetric-gate common)
