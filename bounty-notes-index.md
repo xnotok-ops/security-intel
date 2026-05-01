@@ -4462,3 +4462,4 @@ Gas surfpool install + scaffold exploit.
 - skill-pattern-queue.md (May 1 — +2 Stump patterns: no-op-as-guard EVM, asymmetric-gate common)
 - certik-stump/path-b-finding-1-writeup.md (May 1 — Critical, $95k stranded, PoC PASS)
 - certik-stump TRULY CLOSED May 1 — Lite catch _availableLiquidity Medium, prize unachievable, save $29.13
+- certik-stump TRULY CLOSED May 1 (extended) — Vault uniform defense, $29 saved
