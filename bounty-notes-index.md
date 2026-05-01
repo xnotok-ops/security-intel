@@ -4467,3 +4467,23 @@ Gas surfpool install + scaffold exploit.
 2026-05-01 | kamino T1P4.A klend×scope SATURATED — 5 manual + 6 sanbir-framework, 0 promoted
 2026-05-01 | kamino T1P4.C A3 kvault×klend HARD KILL — Offside Pattern AS hit, design-intent accepted
 2026-05-01 | kamino chapter TRULY CLOSED — all T1P4 sub-paths closed, do-not-revisit
+2026-05-01 | kamino T1P3 ELIMINATE + kliquidity BLOCKED triage
+2026-05-01 | scope T2 P5 HARD KILL — 15 audit passes via GitHub release attachments + final Kamino saturation
+2026-05-01 | kamino mapping v3.3 — Final Pivot canonical override + v0.36.0 trivial-delta + Sec3 phantom Pattern O + audit-corpus enumeration lesson
+2026-05-01 | H-P standalone KILLED — Signer constraints = primary access control, CPI gate = defense-in-depth (not primary), Pattern AG codified
+2026-05-01 | H-U emergency-mode toggle KILLED — premise false (no 'dangerous' flag, no timelock infra), reduced concern OOS (admin-trust)
+2026-05-01 | klend × kfarms CPI integration (Bucket B) KILLED — Pattern AS heavy hit (rx 20 + ottersec 12 + offside-farms 12 + ottersec-farms 13), comprehensively audited both sides
+2026-05-01 | C handler_socialize_loss KILLED — Certora 14 hits with dedicated FV properties (P-06 + vault_solvency_socialize_loss + 3 rule cases). All Kamino buckets exhausted.
+2026-05-01 | KAMINO TRULY-FINAL CLOSURE — 8 hypotheses tested, 0 findings, definitive saturation evidence. Pivot warranted.
+2026-05-01 | kliquidity Target 1 SOURCE BLOCKED — Kamino-Finance/yvaults private SSH-only, cargo cache miss, public mirror 404. Defer to async or pivot Target 2.
+2026-05-01 | Vector 1 gov.kamino.finance Discourse KILLED — voting NOT on Discourse, hosted-managed, low traffic, no enum surface
+2026-05-01 | Vector 2 api.kamino.finance MOSTLY OOS-BY-DESIGN — public API documented, CORS-by-design. 3 residual signals (api/v1 502, health 403, prices 200) parked for DevTools session
+2026-05-01 | KAMINO TARGET 2 KAMINO APP — Phase -1 + Phase 1 web spike complete, all in-scope vectors triaged, defer-not-close
+2026-05-01 | SESSION 2026-05-02 TRULY-FINAL — 11h, 11 hypotheses tested, 0 findings, 3 patterns codified (AG/AH/AI), Kamino fully triaged
+
+## Morpho (Cantina + Immunefi)
+- Path: bounty-notes/morpho/morpho-research-mapping.md
+- Scope ref: bounty-notes/morpho/morpho-scope-rules.md
+- Status: Phase 0 MFD complete (2026-05-01) | Tier 1 P1 next: Vault V2 MarketV1AdapterV2
+- Reward: up to $2,500,000 Critical (Markets V1) / $1,500,000 (other SC)
+- Saturation: HEAVY — 27 audits / 12 firms / 843 Cantina submissions since 2024-03
