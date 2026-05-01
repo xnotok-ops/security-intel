@@ -4465,3 +4465,5 @@ Gas surfpool install + scaffold exploit.
 - certik-stump TRULY CLOSED May 1 (extended) — Vault uniform defense, $29 saved
 2026-05-01 | kamino T1P4.B limo×klend HARD KILL — no CPI integration confirmed
 2026-05-01 | kamino T1P4.A klend×scope SATURATED — 5 manual + 6 sanbir-framework, 0 promoted
+2026-05-01 | kamino T1P4.C A3 kvault×klend HARD KILL — Offside Pattern AS hit, design-intent accepted
+2026-05-01 | kamino chapter TRULY CLOSED — all T1P4 sub-paths closed, do-not-revisit
