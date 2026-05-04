@@ -5360,3 +5360,164 @@ This document = canonical session log for Phase B.1 scrub. Future Phase B.3 batc
 *Session log created: May 4, 2026 (Aurora Day 5 closure)*
 *Author authority: bounty-lessons v3.0 Pattern Universality Gate (5-Q Self-Test)*
 *Cross-references: `_codify-queue.md` (queue source) + `bounty-notes/stacks/program-local-patterns.md` (Phase B.2 siphon)*
+
+
+---
+
+## AU-345 Triage Outcome (May 4, 2026 — same day update)
+
+### Triage verdict
+
+**Status:** Closed as **Informative**
+**Date:** May 4, 2026 11:22 PM (HackenProof)
+**Triager:** @HP-Triage0x090 (triage_team)
+**Rep impact:** +2 (HackenProof rep 138 → 140)
+**Bounty:** $0 (below bounty relevance threshold)
+
+### Triager comment verbatim
+
+> "Hi Notok,
+>
+> Thank you for your report.
+>
+> The intrinsic gas calculation in engine-transactions multiplying the authorization list length by `gas_per_auth_base_cost` rather than `gas_per_empty_account_cost` is a real spec deviation relative to the canonical EIP-7702 intrinsic gas formula. The resulting per authority undercharge is structurally bounded to 12,500 gas, capped at 256 authorities per transaction by EIP-7702, yielding a maximum 3.2 million gas undercharge per transaction.
+>
+> At Aurora's typical sub-Gwei gas pricing, the per-transaction monetary impact is sub-cent and there is no path to direct user fund extraction, since the under-billing accrues against Aurora's relayer revenue rather than user balances. As the report itself notes, the bug does not enable direct theft of user funds, permanent freeze, or insolvency, and the per-transaction economic magnitude is bounded.
+>
+> Given the bounded magnitude and the absence of a user fund impact, this falls below the bounty relevance threshold for the program.
+>
+> We're closing this as 'Informative'.
+>
+> Best regards,
+> HackenProof Triage Team"
+
+### Outcome analysis
+
+**Bug merit:** Confirmed valid. Triager explicitly verifies spec deviation real, math correct, bounded magnitude analysis correct.
+
+**Severity reasoning:** Below bounty threshold per HackenProof's program-specific impact criteria:
+- ✅ Bug exists, technical correct
+- ❌ Sub-cent per-tx impact (bounded magnitude)
+- ❌ No user fund extraction vector
+- ❌ Damage falls on Aurora relayer revenue, not user balances
+- ❌ Self-disclosed bound (3.2M gas undercharge max) cited verbatim by triager as closure rationale
+
+**Net outcome:** Soft-positive (+2 rep, no penalty). NOT NA classification — bug acknowledged as valid, severity-tier insufficient for paid bounty.
+
+### Triple lesson identified
+
+**Lesson 1 — Mantras-vs-Gates distinction**
+
+"Your Own Math Can Reject You" was codified as **mantra** in `bounty-lessons` (knowledge base), not as enforcement gate. Mantras prime thinking but cannot stop submission. Lesson: hard rules with explicit fail conditions must be codified as Gate format with mandatory checklist + decision rules.
+
+**Lesson 2 — Severity-floor reasoning gap**
+
+Claude calculated bound magnitude correctly (3.2M gas undercharge max, sub-cent per-tx) but did NOT translate calculation to threshold check ("does this hit HP Low minimum bounty floor?"). Magnitude calculation alone is insufficient — needs explicit threshold-comparison step with auto-downgrade rules for protocol-revenue recipient classification.
+
+**Lesson 3 — Self-disclosed bounded magnitude becomes triage closure ammo**
+
+Report's own bounded-magnitude disclosure ("max 3.2M gas undercharge per-tx", "no user fund extraction") was quoted verbatim by triager as closure rationale: "As the report itself notes, the bug does not enable direct theft of user funds." Self-disclosure framing requires careful structuring at downgraded tier — not omission, but framing that the disclosure does NOT auto-imply sub-bounty severity.
+
+### Codification response (same-day)
+
+Three new gates/sections added to `bounty-pre-submit` v1.2 to address the triple lesson:
+
+**Gate 8.6 — Impact Explanation & User-Approval Gate**
+- Mandatory enforcement gate before PoC build
+- 4 required steps: STOP → explain impact in Bahasa Indonesia + perumpaan/analogies → propose severity with reasoning → request explicit user approval
+- Wait for "setuju"/"OK"/"lanjut" before proceed; counter-severity from user → adjust + re-confirm
+- Format requirements: bahasa Indonesia, ≥1 user analogy + ≥1 platform analogy, concrete numbers, recipient classification, recovery path
+- Origin pattern: AU-345 user intervention ("minta Low aja")
+
+**Gate 8.7 — Severity-Floor Threshold Check**
+- Technical underpinning of Gate 8.6
+- 6-step magnitude-vs-threshold math: per-tx → cumulative → recipient → threshold compare → auto-downgrade → pass to 8.6
+- Auto-downgrade rules: protocol-revenue damage = -1 tier, bounded per-tx + bounded recipient = consider Informative
+- Worked example: AU-345 retroactive — 8.7 would have proposed Low/Informative vs actual Medium submit
+
+**Meta-Pattern — Mantras-vs-Gates Distinction**
+- Skill design hygiene rule: when to choose mantra format vs gate format
+- Codify hygiene checklist (mandatory for all future patterns from `_codify-queue.md`)
+- Cross-reference to 5-Q Universality Gate (bounty-lessons v3.0): 5-Q covers WHAT to codify, Mantras-vs-Gates covers HOW to codify
+
+### Pattern #10 codify queue update
+
+Pattern #10 (Theft of Gas Wrong-Constant) status updated:
+- **Was:** PENDING CODIFY (post-triage outcome)
+- **Now:** CODIFIED post-AU-345. Promote to `sc-audit-evm` v4.2 with severity floor lesson attached: "Wrong-constant pattern in gas accounting — severity ranges Informative (bounded per-tx + protocol-side recipient) to High (per-tx + user-balance recipient + scaling recipient base). Verify program threshold + recipient classification before claiming severity tier."
+
+### Pattern #13 codify queue update
+
+Pattern #13 ("Your Own Math Can Reject You" Reframe) augmented:
+- Original lesson: reframe attacker-loss findings to protocol/system framing
+- AU-345 enhancement: reframe alone ≠ severity preservation. Reframe MUST be paired with severity-floor check (now Gate 8.7) AND framing of bounded-magnitude self-disclosure that does not auto-imply sub-bounty tier. Triager will quote bounds back verbatim.
+
+---
+
+## Aurora pipeline final closure
+
+**Pipeline state post-AU-345:** FULLY CLOSED
+
+| Target | Status |
+|---|---|
+| AU-345 (T2 EIP-7702) | ✅ INFORMATIVE-CLOSED (May 4, +2 rep) |
+| T1 BLS12-381 | DEFERRED (Osaka-dormant, revisit when Osaka activates) |
+| T2-T7, T11 | SATURATED do-not-revisit |
+| T8 lib.rs entry-point dispatch | UNRESEARCHED, low EV per saturation pattern |
+| T10 sputnikvm | UNRESEARCHED, large cold-start |
+
+**Cumulative pipeline yield:** 1/54 hypotheses = 1.85% (1 Informative, 0 paid bounty)
+
+**Active hunt slot:** Open. Aurora target-bag exhausted, ready for pivot to new target.
+
+---
+
+*AU-345 outcome update appended: May 4, 2026 (same day as triage closure)*
+*Codification response: bounty-pre-submit v1.2 (Gate 8.6 + 8.7 + Meta-Pattern)*
+*Authority source: bounty-lessons v3.0 Pattern Universality Gate (5-Q passed for all 3 new sections — verified universal applicability)*
+
+
+---
+
+
+
+
+---
+
+## [2026-05-04] — Aurora HackenProof AU-345 — Triage Outcome + Pattern #10 Update
+
+- **Source:** AU-345 triage closure May 4, 2026 11:22 PM (HP-Triage0x090, Informative verdict, +2 rep, no bounty)
+- **Severity:** Informative (closed below bounty relevance threshold)
+- **Pattern:** EIP-7702 intrinsic gas wrong-constant pick (Pattern #10) — VALID bug confirmed by triage but bounded magnitude (max 3.2M gas undercharge per-tx, sub-cent monetary impact, protocol-revenue recipient) below bounty threshold.
+- **Why generic:** AU-345 is the canonical case study for severity-floor reasoning gap. Wrong-constant pattern in gas accounting = bug class with severity range Informative (bounded per-tx + protocol-side) to High (per-tx + user-balance + scaling). Severity tier requires program threshold + recipient classification check, not just technical merit.
+- **Skill target:** sc-audit-evm v4.2 — paired-constant audit pattern with severity-floor calibration. Promote with mandatory checklist: (1) recipient classification (user balance vs protocol revenue), (2) magnitude vs program threshold, (3) self-disclosure framing per Pattern #13.
+- **Status:** CODIFIED — AU-345 outcome documented at `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome section). Skill body promotion deferred to Phase B.3c (sc-audit-evm batch).
+
+---
+
+## [2026-05-04] — bounty-pre-submit v1.2 — Pattern #13 "Your Own Math" Mantra-to-Gate Promotion
+
+- **Source:** AU-345 lesson — "Your Own Math Can Reject You" was mantra in bounty-lessons (knowledge), not enforcement gate. Failed to fire when needed.
+- **Severity:** Methodology pattern (skill design hygiene)
+- **Pattern:** Mantras-vs-Gates distinction. Hard rules with explicit pass/fail criteria MUST be codified as Gate format (mandatory checklist + decision rules + kill conditions). Reasoning aids OK as mantra format. Wrong format = pattern fails to fire under cognitive load / time pressure / confirmation bias (AU-345 case).
+- **Why generic:** Skill design hygiene rule — applies to ALL future codify operations across skill suite. Companion to 5-Q Universality Gate (bounty-lessons v3.0): 5-Q covers WHAT to codify (universal vs platform-cond vs program-local), Mantras-vs-Gates covers HOW to codify (knowledge format vs enforcement format). Both gates apply to every codify candidate.
+- **Skill target:** ✅ ALREADY-CODIFIED at bounty-pre-submit v1.2 Meta-Pattern section + Gate 8.6 (Impact Explanation & User-Approval enforcement) + Gate 8.7 (Severity-Floor Threshold Check technical underpinning).
+- **Status:** CODIFIED — same-day response to AU-345 lesson. Cross-reference at bounty-lessons v3.0 Universality Gate companion section pending future skill update.
+
+---
+
+## [2026-05-04] — Aurora HackenProof AU-345 — Self-Disclosed Bounded Magnitude Becomes Closure Citation
+
+- **Source:** AU-345 triager comment verbatim: "As the report itself notes, the bug does not enable direct theft of user funds, permanent freeze, or insolvency, and the per-transaction economic magnitude is bounded."
+- **Severity:** Methodology pattern (report framing)
+- **Pattern:** When report includes bounded-magnitude self-disclosure (max impact bound, no-user-loss disclaimer, recipient classification), triage WILL quote verbatim as closure rationale if bound falls below paid-tier threshold. Reframe to protocol-system framing alone is insufficient — reframe MUST be paired with severity-floor check AND careful framing of self-disclosure that does NOT auto-imply sub-bounty severity.
+- **Why generic:** Universal bounded-magnitude finding pattern. Applies to gas accounting bugs, bounded DoS findings, sub-cent precision losses, protocol-revenue diversions. Triager pattern: search report text for self-bound disclaimers, quote back as closure rationale.
+- **Mitigation patterns:**
+  - Don't omit bound (creates unverified-claim closure risk)
+  - Frame bound as "per-tx bounded to X, but cumulative protocol-side cost = $Y/day at typical volume = above bounty floor"
+  - If bound + recipient combo objectively below threshold → self-classify Informative pre-submit (avoids submission fee + rep risk)
+- **Skill target:** Pattern #13 "Your Own Math Can Reject You" augmentation in bounty-lessons. Add: "Reframe to protocol-system framing required BUT NOT SUFFICIENT. Pair with Gate 8.7 severity-floor check + careful self-disclosure framing."
+- **Status:** PENDING-CODIFY (Phase B.3e bounty-lessons batch, but Gate 8.6/8.7 already enforce the principle)
+
+---
+
