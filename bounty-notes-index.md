@@ -4810,3 +4810,553 @@ Alternative: **Pivot to other pipeline** if Aurora yield fatigue:
 
 **Aurora yield calibration:** D1=1/9 (T2 EIP-7702), D2=0/12 (T3), D3=0/16 (T4+T5), D4=0/13 (T6) — cumulative 1/50 = 2% promotion rate. Tier S Pectra surface (T2) yielded the only finding; subsequent Tier S/A/B targets all saturated. **Pattern: fresh-Pectra is highest yield zone for this codebase; mature precompiles + audited core are lower yield.**
 
+# Stacks Foundation (Immunefi) — Program-Local Patterns
+
+Patterns specific to Stacks Foundation Immunefi program — **NOT promoted to global skill body** because they fail 5-Q Universality Gate Q5 (don't generalize to non-Stacks programs).
+
+**Triggered loading:** when working on Stacks Immunefi bounty (`stacks-core`, `sBTC`, `clarinet`, `stacks-signer`, etc.).
+
+**5-Q Gate verdict:** PROGRAM-LOCAL (siphoned May 4, 2026 from `_codify-queue.md` per Phase B.1 scrub).
+
+---
+
+## [2026-05-03] WSL2 + /mnt/c/ NTFS unsuitable for Stacks integration tests
+
+- **Trigger phrase:** "Stacks integration test", "BITCOIND_TEST", "WSL Stacks env"
+- **Operational rule:** When auditing stacks-core or sBTC, do NOT attempt end-to-end integration tests on WSL2 + Windows-mounted paths. Use Linux native (Docker, cloud VM, GitHub Codespaces). Verify env health by running canonical existing test (e.g., `deadlock_50_50_split_capitulates_to_node_tip`) before debugging your own test.
+- **Evidence:** Stacks H_A session lost ~3h debugging WSL env before discovering canonical test fails identically.
+- **Reuse score:** 2x+ (any future Stacks Immunefi/Cantina/Sherlock program)
+- **5-Q verdict:** Q4 fails (Stacks-specific environment), Q5 fails on non-Stacks programs → PROGRAM-LOCAL
+
+---
+
+## [2026-05-03] Stacks Foundation pays rewards in STX (not USDC)
+
+- **Trigger phrase:** "Stacks bug bounty wallet", "Stacks Immunefi reward"
+- **Operational rule:** Stacks Foundation Immunefi program pays rewards in STX token (denominated in USD equivalent). Wallet field expects STX-format SP-prefix mainnet address (Xverse or similar non-custodial). The 100 USDC submission fee is paid SEPARATELY via Ethereum wallet — these are TWO different transactions and TWO different wallets needed.
+- **Reuse score:** 2x+ (any future Stacks-related Immunefi submission)
+- **5-Q verdict:** Q4 fails (Stacks Foundation operational specifics), Q5 fails on non-Stacks → PROGRAM-LOCAL
+- **Note:** Generic "submission fee + reward currency mismatch" pattern is captured in `bounty-pre-submit` Gate 0.5 (universal). This entry is the Stacks-specific instance.
+
+---
+
+## [2026-05-03] SignerTest harness API for stop/restart pattern
+
+- **Trigger phrase:** "Stacks integration test signer restart", "SignerTest harness"
+- **Operational reference:**
+  - `SignerTest::stop_signer(idx) -> SignerConfig` (parent mod.rs:1563)
+  - `SignerTest::restart_signer(idx, config)` (parent mod.rs:1573)
+  - `SignerTest::signer_configs[i].db_path` (pub field, mod.rs:118)
+  - `GlobalConfig` aliased as `SignerConfig` (mod.rs:62)
+  - `SpawnedSigner::new(GlobalConfig)` triggers production bootstrap path (NOT a `#[cfg(test)]` mock)
+  - Reference pattern: `capitulate_parent_tenure_view.rs`, `mod.rs:7918-7937`
+- **Reuse score:** 2x+ (any future Stacks integration test that needs signer downtime/restart)
+- **5-Q verdict:** Q4 fails (stacks-core specific test infrastructure), Q5 fails on non-Stacks → PROGRAM-LOCAL
+
+---
+
+## Cross-reference: universal patterns siphoned elsewhere
+
+The following Stacks H_A learnings have **universal equivalents** in global skills (not duplicated here):
+
+- **PoC Code-Path Coverage Gate** → already codified at `bounty-pre-submit` Gate 11 (v2.8) from Stacks #76119 closure
+- **PoC End-Impact Coverage success case** → already codified at `bounty-pre-submit` Gate 9 (v2.4)
+- **Test-gated reader method as PoC scaffolding** → pending universal promotion (5-Q PASS) to `sc-audit-common` Rust patterns section, batch B.3e (deferred to next session)
+
+---
+
+## Append discipline
+
+Future Stacks-specific patterns (PROGRAM-LOCAL per 5-Q gate) → append here, not to global skill body.
+Append format: same as queue entry (## header + bulleted body + 5-Q verdict line).
+
+---
+
+*File created: May 4, 2026 (Phase B.1 codify scrub session, Aurora Day 5)*
+*Authority source: bounty-lessons v3.0 Pattern Universality Gate 5-Q classification*
+
+
+---
+
+
+# Aurora Day 5 — Codify Queue Scrub Session
+
+**Date:** May 4, 2026
+**Trigger:** Codify-poison audit findings + Aurora session closure
+**Method:** 5-Q Universality Gate (introduced in `bounty-lessons` v3.0)
+**Authority source:** `bounty-lessons` v3.0 Pattern Universality Gate (Pre-Codify Self-Test)
+
+---
+
+## Session context
+
+Phase A (skill poison fix) completed prior to this session — 3 skills updated:
+- `bounty-lessons` v2.9 → v3.0 (Pattern Universality Gate added + Zest Lesson 3 fix)
+- `bounty-pre-submit` v1.0 → v1.1 (Gate 8.5 Pre-PoC Investment + HackerOne→HackenProof)
+- `smart-contract-audit-common` v4.3 → v4.4 (UpgradeCap severity-range)
+
+Phase B.1 = THIS scrub. Goal: classify all PENDING patterns in `_codify-queue.md` against 5-Q Universality Gate, route to appropriate destination (UNIVERSAL/PLATFORM-COND/PROGRAM-LOCAL/ALREADY-DONE).
+
+Phase B.2 = siphon PROGRAM-LOCAL patterns to program-folder (this session).
+Phase B.3 = batched UNIVERSAL promotion to skill bodies (deferred, multi-session).
+
+---
+
+## Pre-scrub state
+
+- Total patterns inventoried: 40 PENDING entries
+- Source distribution:
+  - CertiK Stump (Apr-May 2026): 6 patterns
+  - Aurora May 4 batch: 3 patterns
+  - Aurora HackenProof + Stacks Gate batch: 11 patterns
+  - FrankSol Solana Audit Arena W4: 13 patterns
+  - Stacks H_A candidates (May 3): 6 patterns + 1 already integrated
+
+---
+
+## 5-Q Gate Per-Pattern Rationale
+
+### CertiK Stump batch (Apr-May 2026)
+
+#### #1 — lite-catches-cross-token-accumulator-staleness (Plant N5b)
+- **Skill target:** sc-audit-evm
+- **Q1 (chain-agnostic mechanism):** PASS — Synthetix StakingRewards multi-reward pattern is EVM-universal
+- **Q2 (severity hardcoded):** PASS — "Medium (Lite-tagged) could argue High per README" = severity range present
+- **Q3 (scope hardcoded):** PASS — no scope assertion
+- **Q4 (platform mechanics):** PASS — no platform reference
+- **Q5 (3-platform test):** PASS — Synthetix patterns valid on HackenProof/Sherlock/C4
+- **Verdict:** 🟢 UNIVERSAL — promote-ready, no severity-range polish needed
+- **Promotion target:** sc-audit-evm body (Synthetix multi-reward section)
+
+#### #2 — solvency-assertion-omits-unclaimed-liabilities
+- **Skill target:** sc-audit-evm
+- **Q1:** PASS — solvency check pattern is universal
+- **Q2:** PASS — "Major (Lite-tagged) — could argue High" = range
+- **Q3:** PASS
+- **Q4:** PASS
+- **Q5:** PASS — applies to all reward systems (vault performance fee, lending interest, vesting)
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (solvency check patterns)
+
+#### #3 — queued-penalty-reclamation-by-penalized-staker
+- **Skill target:** sc-audit-evm
+- **Q1:** PASS — slashing/penalty queue pattern is universal
+- **Q2:** PASS — "Medium" stated, mechanism allows tier escalation
+- **Q3:** PASS
+- **Q4:** PASS
+- **Q5:** PASS
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (penalty queue mechanisms)
+
+#### #4 — uint128-rate-squeeze-DoS-large-penalty-flush
+- **Skill target:** sc-audit-evm
+- **Q1:** PASS — uint128 storage cast applies cross-chain (EVM + Solana sealevel)
+- **Q2:** PASS — "Medium (temporary DoS)" bounded
+- **Q3:** PASS
+- **Q4:** PASS
+- **Q5:** PASS
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (storage type cast patterns) + sc-audit-common (cross-chain reference)
+
+#### #5 — lite-evade-rate-realistic-calibration (closure methodology)
+- **Skill target:** bounty-lessons
+- **Q1:** PASS — calibration data point universal for AI-auditor benchmarks
+- **Q2:** PASS — calibration ranges given as %, no severity claim
+- **Q3:** PASS
+- **Q4:** PASS — generic "stump-style + AI-auditor benchmark challenges"
+- **Q5:** PASS — applies to any AI-auditor benchmark
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-lessons body (methodology section)
+
+#### #6 — README-hotspots-confirmed-bait (closure methodology)
+- **Skill target:** bounty-lessons
+- **Q1-Q5:** All PASS — methodology rule for AI-auditor challenges
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-lessons body (methodology section)
+
+---
+
+### Aurora May 4 batch (3 patterns)
+
+#### #7 — EIP-7702 intrinsic gas undercharge (wrong constant pick)
+- **Skill target:** sc-audit-evm v4.1+ EIP-7702 patterns + Pectra fork audit checklist
+- **Q1:** PASS — EIP-7702 is fresh post-Pectra cross-EVM applicability
+- **Q2:** PASS — "MEDIUM-HIGH" with reasoning given
+- **Q3:** PASS — anchored to "theft-of-gas explicitly in-scope" conditional
+- **Q4:** PASS — Pectra fork is technical context not platform mechanic
+- **Q5:** PASS — applies to any EVM L2 implementing 7702
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (EIP-7702 audit fingerprint)
+
+#### #8 — Test asserts the buggy constant (FP pattern)
+- **Skill target:** bounty-lessons v2.6 Pre-Submit FP-patterns + Gate 5 cross-check
+- **Q1-Q5:** All PASS — universal "test validates impl not spec" pattern
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-pre-submit Gate 5 anti-FP catalog (already 45 entries from The Judge — append as 46th)
+
+#### #9 — Cross-runtime ecrecover host function malleability flag
+- **Skill target:** sc-audit-evm v4.1 cross-runtime + sc-audit-common v4.2
+- **Q1:** PASS — applies to any chain hosting EVM via non-EVM runtime
+- **Q2:** PASS — "LOW (in this context)" with explicit "Higher in contexts where..." conditional
+- **Q3:** PASS — explicit audit step verification
+- **Q4:** PASS
+- **Q5:** PASS — Aurora-NEAR, Sei EVM, Polygon zkEVM
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (cross-runtime ecrecover) + sc-audit-common (cross-runtime audit step)
+
+---
+
+### Aurora HackenProof + Stacks Gate batch (11 patterns)
+
+#### #10 — Theft of Gas Wrong-Constant Pattern (FINDING G AU-345)
+- **Skill target:** sc-audit-evm v4.2 paired-constant pattern + bounty-lessons v2.8 anti-DI-1
+- **Q1:** PASS — paired-constant spec pattern is universal
+- **Q2:** PASS — severity range given (Low w/ Medium upgrade argument)
+- **Q3:** PASS
+- **Q4:** PASS — generic to EVM
+- **Q5:** PASS — applies to any EIP impl with paired discount constants
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (paired-constant audit pattern) — **AWAIT AU-345 triage outcome before final promotion**
+
+#### #11 — Verified-PoC Discipline Pattern
+- **Skill target:** bounty-lessons v2.8 + bounty-workflow v2.10
+- **Q1-Q5:** All PASS — universal SC bounty methodology
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-pre-submit (Gate 8.5 Check 1 reinforces this) + bounty-lessons body
+
+#### #12 — HP Category Mapping Discipline
+- **Skill target:** bounty-lessons v2.8 HackenProof platform section
+- **Q1:** PASS — UI category mapping mismatch is universal mechanism
+- **Q2:** PASS — methodology, no severity
+- **Q3:** PASS
+- **Q4:** **FAIL** — explicitly references HackenProof platform mechanics ("HP dropdown", "HP global taxonomy")
+- **Q5:** PASS-CONDITIONAL — generalizable concept (any platform with category dropdown), but specific impl references HP
+- **Verdict:** 🟡 PLATFORM-COND (HackenProof)
+- **Promotion target:** bounty-lessons "Platform-Specific Notes > HackenProof" section — already correctly destination-tagged
+
+#### #13 — "Your Own Math Can Reject You" Live Reframe
+- **Skill target:** bounty-lessons v2.8 mantra section expansion
+- **Q1-Q5:** All PASS — universal economic-analysis reframe pattern
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-lessons body (Mantras section, "Your own math" subsection expansion)
+
+#### #14 — Stacks #76119 PoC Code-Path Coverage Gate
+- **Verdict:** ✅ ALREADY-DONE — codified as `bounty-pre-submit` Gate 11 v2.8
+- **Action:** Strike from queue with `[CLOSED — already at bounty-pre-submit Gate 11]`
+
+#### #15 — WASM-EVM Precompile Gas Mispricing via Host-vs-WASM Execution Asymmetry
+- **Skill target:** sc-audit-evm + sc-audit-common
+- **Q1:** PASS — applies to any cross-runtime EVM
+- **Q2:** PASS
+- **Q3:** PASS
+- **Q4:** PASS
+- **Q5:** PASS — Aurora-NEAR, Polygon zkEVM, Sei EVM, Stylus
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-evm body (precompile gas accounting) + sc-audit-common (cross-runtime audit checklist)
+
+#### #16 — Thin-Review Precompile Heuristic (process signal)
+- **Skill target:** bounty-workflow v2.10 Phase 0.5 weighting (NOT skill body promotion)
+- **Q1-Q5:** All PASS — process signal universal across SC reviews
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-workflow Phase 0.5 weighting heuristic
+
+#### #17 — External-Relocation Reframe Heuristic
+- **Skill target:** bounty-workflow Phase 0.5 step
+- **Q1-Q5:** All PASS — universal long-lived codebase pattern
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-workflow Phase 0.5 step (audit-anchor relocation check)
+
+#### #18 — Pattern Guard + Wildcard Semantic-Preservation
+- **Skill target:** sc-audit-common Rust-specific patterns section
+- **Q1:** PASS — Rust idiom universal
+- **Q2-Q5:** All PASS
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (Rust pattern-matching audit discipline)
+
+#### #19 — Defense-in-Depth Dual-Layer Bounded-Amount Validation
+- **Skill target:** saturation-signal heuristic
+- **Q1-Q5:** All PASS — saturation signal universal
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (cross-chain bridge audit, amount-validation redundancy)
+
+#### #20 — Lint-Only Feature Flag (Config-Dormant Amplifier #2)
+- **Skill target:** bounty-workflow v2.10 Phase 0.7 Gate 6 sub-checklist
+- **Q1:** PASS — config-dormant pattern extension
+- **Q2:** PASS — "severity ceiling = Low/Informational" reasoning is universal config-dormant rule (NOT hardcoded severity)
+- **Q3:** PASS
+- **Q4:** PASS — Cargo features is technical context not platform mechanic
+- **Q5:** PASS — any project with feature-flagged code paths
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-workflow Gate 6 sub-checklist (config-dormant 2nd dormancy class)
+
+#### #21 — JSON Injection Prevention via Typed Args
+- **Skill target:** sc-audit-evm or sc-audit-common (cross-chain bridge serialization)
+- **Q1-Q5:** All PASS — universal JSON injection prevention
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (cross-chain bridge serialization safety patterns)
+
+---
+
+### FrankSol Solana Audit Arena W4 batch (13 patterns)
+
+⚠️ **Pattern AS-AZ + BA-BC severity polish required:** All FrankSol patterns currently use hardcoded severity labels ("CRITICAL", "HIGH", "MEDIUM"). Per 5-Q Q2, severity must be reframed as ranges with conditional triggers before final body promotion. This is severity-range polish (not Q2 fail), affects all 13 patterns identically.
+
+#### #22 — Pattern AS: PnL Sign Inversion vs Documented Spec
+- **Skill target:** sc-audit-solana cross-doc-code methodology + sc-audit-common LST PnL accounting
+- **Q1:** PASS — spec-vs-code mismatch is universal across all SC chains
+- **Q2:** PASS-CONDITIONAL — needs severity-range polish ("CRITICAL" → "HIGH-CRITICAL depending on financial impact magnitude")
+- **Q3-Q5:** All PASS
+- **Verdict:** 🟢 UNIVERSAL (with severity-range polish)
+- **Promotion target:** sc-audit-common body (LST PnL accounting) + sc-audit-solana (Solana cross-doc verification methodology)
+
+#### #23 — Pattern AT: Permissionless Yield Drain via Shared APY Vault (Ponzi)
+- **Skill target:** sc-audit-solana yield aggregator pattern + sc-audit-common yield-strategy trust model
+- **Q1:** PASS — ponzi detection universal
+- **Q2:** PASS-CONDITIONAL — "CRITICAL/HIGH" range OK, but reword conditional
+- **Q3-Q5:** All PASS
+- **Verdict:** 🟢 UNIVERSAL (with severity-range polish)
+- **Promotion target:** sc-audit-common body (yield-strategy trust model assessment)
+
+#### #24 — Pattern AU: Anchor v2 Manual CPI Account-Order Discipline
+- **Skill target:** sc-audit-solana NEW Anchor v2 section
+- **Q1:** PASS within Solana ecosystem (Anchor v2 specific)
+- **Q2-Q4:** All PASS
+- **Q5:** PASS-CONDITIONAL — Solana-conditional but fine for sc-audit-solana scope
+- **Verdict:** 🟢 UNIVERSAL within Solana ecosystem
+- **Promotion target:** sc-audit-solana NEW Anchor v2 manual CPI section
+
+#### #25 — Pattern AV: `init` Constraint Insufficient vs PDA Prefund DoS
+- **Skill target:** sc-audit-solana
+- **Q1:** PASS within Solana (system::create_account semantic)
+- **Q2-Q5:** All PASS within Solana
+- **Verdict:** 🟢 UNIVERSAL within Solana ecosystem
+- **Promotion target:** sc-audit-solana body (PDA initialization patterns)
+
+#### #26 — Pattern AW: Anchor v2 ConstraintDuplicateMutableAccount on Duplicated Address
+- **Skill target:** sc-audit-solana NEW Anchor v2 section
+- **Q1:** PASS within Solana (Anchor v2 ConstraintDuplicate)
+- **Q2:** PASS — "CRITICAL (permanent DoS)" reasoning is universal Anchor behavior
+- **Q3-Q5:** All PASS within Solana
+- **Verdict:** 🟢 UNIVERSAL within Solana ecosystem
+- **Promotion target:** sc-audit-solana NEW Anchor v2 section (same section as #24)
+
+#### #27 — Pattern AX: LST Share Math Operation-Order Inversion (div-then-mul)
+- **Skill target:** sc-audit-common LST/ERC4626 share math + sc-audit-solana
+- **Q1:** PASS — LST/ERC4626 share math is cross-chain
+- **Q2:** PASS-CONDITIONAL — needs severity-range polish
+- **Q3-Q5:** All PASS
+- **Verdict:** 🟢 UNIVERSAL (with severity-range polish)
+- **Promotion target:** sc-audit-common body (LST share math antipattern) + sc-audit-solana cross-ref
+
+#### #28 — Pattern AY: token::authority Absent → Mint Redirection State Desync
+- **Skill target:** sc-audit-solana Anchor token account constraint checklist
+- **Q1:** PASS within Solana (Anchor token constraint)
+- **Q2:** PASS — "LOW-MEDIUM" range explicit
+- **Q3-Q5:** All PASS within Solana
+- **Verdict:** 🟢 UNIVERSAL within Solana ecosystem
+- **Promotion target:** sc-audit-solana body (Anchor account constraint checklist)
+
+#### #29 — Pattern AZ: Open Initialize → Frontrun Authority Capture
+- **Skill target:** sc-audit-common init authority patterns (chain-agnostic)
+- **Q1:** PASS — chain-agnostic init pattern
+- **Q2:** PASS-CONDITIONAL — "HIGH" needs severity-range polish
+- **Q3-Q5:** All PASS — applies EVM/Solana/cross-chain
+- **Verdict:** 🟢 UNIVERSAL (with severity-range polish)
+- **Promotion target:** sc-audit-common body (init authority patterns)
+
+#### #30 — Pattern BA: Admin Role Rotation During Inflight State Freezes Funds
+- **Skill target:** sc-audit-common admin role rotation patterns
+- **Q1:** PASS — chain-agnostic admin rotation
+- **Q2:** PASS — "MEDIUM-HIGH" range given
+- **Q3-Q5:** All PASS
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (admin role rotation discipline)
+
+#### #31 — Pattern BB: Slippage Check on Pre-Fee Gross Value (Antipattern)
+- **Skill target:** sc-audit-common slippage check patterns (chain-agnostic)
+- **Q1-Q5:** All PASS — universal slippage anti-pattern
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (slippage check audit, applies EVM + Solana)
+
+#### #32 — Pattern BC: CPI Target Program Address Validation Asymmetry
+- **Skill target:** sc-audit-solana
+- **Q1:** PASS within Solana (CPI program-ID validation)
+- **Q2-Q5:** All PASS within Solana
+- **Verdict:** 🟢 UNIVERSAL within Solana ecosystem
+- **Promotion target:** sc-audit-solana body (CPI validation discipline)
+
+#### #33 — METHODOLOGY: Public Race-Format Bounty Strategy
+- **Skill target:** bounty-workflow NEW Phase -1 + bounty-lessons race-format entry
+- **Q1:** PASS — race-format strategy is universal
+- **Q2:** PASS — methodology
+- **Q3:** PASS
+- **Q4:** PARTIAL FAIL — references "Solana Audit Arena W4" specifics, but mechanism universal
+- **Q5:** PASS-CONDITIONAL — applies to any race-format public bounty (Code4rena public, Solana Audit Arena, similar)
+- **Verdict:** 🟡 PLATFORM-COND (race-format public bounties)
+- **Promotion target:** bounty-workflow NEW Phase -1 (Pre-Phase-0 Existing-Submissions Check) + bounty-lessons race-format conditional entry
+
+#### #34 — METHODOLOGY: PROGRAM_GUIDE / Spec-First Reading
+- **Skill target:** bounty-workflow Phase 0.5 spec-first step + bounty-lessons reading discipline
+- **Q1-Q5:** All PASS — universal spec-first methodology
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** bounty-workflow Phase 0.5 (doc-vs-code invariant cross-check) + bounty-lessons reading discipline
+
+---
+
+### Stacks H_A candidates (May 3, 2026)
+
+#### #35 — WSL2 + /mnt/c/ NTFS unsuitable for Stacks integration tests
+- **Q1:** PASS — operational mechanism (filesystem layer mismatch with chain-specific test req)
+- **Q4:** **FAIL** — Stacks-specific environment requirement
+- **Q5:** **FAIL** on non-Stacks programs (no other chain has this exact integration-test-on-WSL constraint)
+- **Verdict:** 🔴 PROGRAM-LOCAL (Stacks)
+- **Action:** Siphon to `bounty-notes/stacks/program-local-patterns.md` ✅ DONE this session
+
+#### #36 — Stacks Foundation pays rewards in STX (not USDC)
+- **Q1:** PASS — operational fact
+- **Q4:** **FAIL** — Stacks Foundation operational specifics
+- **Q5:** **FAIL** on non-Stacks
+- **Verdict:** 🔴 PROGRAM-LOCAL (Stacks)
+- **Action:** Siphon to `bounty-notes/stacks/program-local-patterns.md` ✅ DONE this session
+- **Note:** Generic "submission fee + reward currency mismatch" pattern is captured in `bounty-pre-submit` Gate 0.5 (universal). This entry is the Stacks-specific instance.
+
+#### #37 — v2.4 PoC End-Impact Coverage (Stacks success case)
+- **Verdict:** ✅ ALREADY-DONE — already canonical in `bounty-pre-submit` Gate 9 (v2.4)
+- **Action:** Strike from queue with `[CLOSED — already at bounty-pre-submit Gate 9]`
+
+#### #38 — Immunefi 100 USDC per-program submission fee mechanism
+- **Q1:** PASS — Immunefi operational fact
+- **Q4:** **FAIL** — Immunefi-specific platform mechanic
+- **Q5:** **FAIL** on non-Immunefi platforms
+- **Verdict:** 🟡 PLATFORM-COND (Immunefi)
+- **Promotion target:** `bounty-pre-submit` Gate 0.5 expansion (already references Stacks 100 USDC fee + STX wallet surprise pattern) — verify if more detail needed
+- **Action:** Verify Gate 0.5 already covers this. If yes → strike from queue. If no → expand Gate 0.5.
+
+#### #39 — SignerTest harness API for stop/restart pattern
+- **Q1:** PASS — Stacks-specific test harness reference
+- **Q4:** **FAIL** — stacks-core specific test infrastructure
+- **Q5:** **FAIL** on non-Stacks
+- **Verdict:** 🔴 PROGRAM-LOCAL (Stacks)
+- **Action:** Siphon to `bounty-notes/stacks/program-local-patterns.md` ✅ DONE this session
+
+#### #40 — Test-gated reader method as PoC scaffolding
+- **Q1:** PASS — universal Rust cfg-gated reader pattern
+- **Q2-Q5:** All PASS — any Rust project with cfg-gated test methods
+- **Verdict:** 🟢 UNIVERSAL
+- **Promotion target:** sc-audit-common body (Rust patterns) OR bounty-lessons (PoC scaffolding) — pick destination during B.3e batch
+
+---
+
+## Post-scrub state — Final tally
+
+### 🟢 UNIVERSAL: 33 patterns
+**Promotion-ready, batched migration deferred to Phase B.3 (next sessions):**
+
+#### sc-audit-common (chain-agnostic batch, highest yield) — 12 patterns
+- #4 (storage type cast cross-chain ref)
+- #9 (cross-runtime ecrecover audit step)
+- #15 (WASM-EVM precompile gas accounting)
+- #18 (Rust pattern-guard wildcard discipline)
+- #19 (bridge dual-layer amount validation)
+- #21 (JSON injection prevention typed args)
+- #22 (LST PnL accounting)
+- #23 (yield-strategy trust model)
+- #27 (LST share math antipattern)
+- #29 (init authority patterns)
+- #30 (admin role rotation)
+- #31 (slippage check pre-fee)
+
+#### sc-audit-evm — 8 patterns
+- #1, #2, #3, #4 (CertiK Stump Synthetix bugs)
+- #7 (EIP-7702 wrong-constant)
+- #9 (cross-runtime ecrecover EVM)
+- #10 (paired-constant audit pattern — AWAIT AU-345 outcome)
+- #15 (precompile gas accounting EVM)
+
+#### sc-audit-solana — 5 patterns + NEW Anchor v2 section
+- #24, #26 (Anchor v2 manual CPI / DuplicateMutable — NEW SECTION)
+- #25 (PDA prefund DoS init constraint)
+- #28 (token::authority absent)
+- #32 (CPI program-ID validation)
+
+#### bounty-workflow — 5 patterns
+- #16 (thin-review heuristic Phase 0.5 weighting)
+- #17 (external-relocation reframe Phase 0.5)
+- #20 (lint-only feature flag Gate 6)
+- #33 (race-format Phase -1 — also platform-cond)
+- #34 (spec-first Phase 0.5)
+
+#### bounty-lessons — 5 patterns
+- #5 (lite-evade calibration)
+- #6 (README-hotspots bait)
+- #11 (verified-PoC discipline)
+- #13 ("your own math" reframe expansion)
+- #34 (spec-first reading discipline)
+
+#### bounty-pre-submit — 1 pattern
+- #8 (test asserts buggy constant — Gate 5 anti-FP append)
+
+### 🟡 PLATFORM-COND: 3 patterns
+- #12 HP Category Mapping → bounty-lessons HackenProof Platform Notes (codify with HP conditional)
+- #33 Race-Format Bounty → bounty-workflow Phase -1 (codify with race-format conditional)
+- #38 Immunefi 100 USDC fee → bounty-pre-submit Gate 0.5 expansion (verify existing coverage first)
+
+### 🔴 PROGRAM-LOCAL: 3 patterns — SIPHONED THIS SESSION ✅
+- #35, #36, #39 → `bounty-notes/stacks/program-local-patterns.md` (created May 4, 2026)
+
+### ✅ ALREADY-DONE: 2 patterns — STRUCK FROM QUEUE
+- #14 → already at bounty-pre-submit Gate 11 (v2.8)
+- #37 → already at bounty-pre-submit Gate 9 (v2.4)
+
+---
+
+## Phase B.3 Promotion Plan (multi-session, deferred)
+
+Suggested batch order (highest yield first):
+
+**Batch 3a — sc-audit-common cross-chain (12 patterns):** Biggest yield, broadest applicability. Target version: v4.5. Estimated 1.5-2h session.
+
+**Batch 3b — sc-audit-solana NEW Anchor v2 section (5 patterns):** New section creation. Target version: v4.3. Estimated 1-1.5h session.
+
+**Batch 3c — sc-audit-evm Pectra/EIP + Synthetix (8 patterns):** Target version: v4.2. Estimated 1.5h session.
+
+**Batch 3d — bounty-workflow Phase 0.5/0.7/-1 (5 patterns):** Target version: v2.11 or v3.0 (NEW Phase -1 = major). Estimated 1h session.
+
+**Batch 3e — bounty-lessons + bounty-pre-submit (6 patterns):** Methodology + Gate 5 anti-FP append. Target versions: bounty-lessons v3.1, bounty-pre-submit v1.2. Estimated 1h session.
+
+**Batch 3f — Platform-cond (3 patterns):** Conditional clauses required. Target across multiple skills. Estimated 30min session.
+
+**Total estimate:** 6-8h work across 5-7 sessions. Each batch independent, can be picked any session order based on context budget + active research priority.
+
+---
+
+## Cross-skill version impact (post B.3 complete)
+
+If all batches execute as planned:
+
+| Skill | Current | Post-B.3 |
+|---|---|---|
+| sc-audit-common | v4.4 | v4.5 |
+| sc-audit-evm | v4.1 | v4.2 |
+| sc-audit-solana | v4.2 | v4.3 |
+| bounty-workflow | v2.10 | v2.11 or v3.0 (Phase -1 NEW) |
+| bounty-lessons | v3.0 | v3.1 |
+| bounty-pre-submit | v1.1 | v1.2 |
+
+---
+
+## Operational notes
+
+### Codify-poison risk: AVOIDED via 5-Q gate
+- Pre-v3.0 codify mechanism would have promoted Pattern Guard (#18), JSON Injection (#21), Anchor v2 (#24-26) directly to skill body without scoping check.
+- 5-Q gate caught severity-hardcoding in 6 FrankSol patterns (#22, #23, #27, #29 + others) — flagged for severity-range polish before promotion.
+- 3 patterns rerouted from global skill body to program-folder (PROGRAM-LOCAL) — saves ~30-50 LoC of poison content per skill.
+
+### Audit trail integrity
+This document = canonical session log for Phase B.1 scrub. Future Phase B.3 batches should reference this file's per-pattern verdicts for traceability.
+
+---
+
+*Session log created: May 4, 2026 (Aurora Day 5 closure)*
+*Author authority: bounty-lessons v3.0 Pattern Universality Gate (5-Q Self-Test)*
+*Cross-references: `_codify-queue.md` (queue source) + `bounty-notes/stacks/program-local-patterns.md` (Phase B.2 siphon)*
