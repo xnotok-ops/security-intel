@@ -4644,3 +4644,169 @@ Gas surfpool install + scaffold exploit.
 - Hypothesis count: 10 (all duped — 0 first-finder)
 - Skill update target: sc-audit-solana v4.2 (Anchor v2 section), sc-audit-common v4.3, bounty-workflow v3.0 (Phase -1 race-format pre-check), bounty-lessons v2.7 (race-format + spec-first)
 - Status: Skipped submission, codified patterns for skill update post-Monday May 11 (after Frank's results).
+
+
+---
+
+## 18. Day 4 Research Log — May 4, 2026 (Target 6 closure)
+
+### Session summary
+
+- **Date:** 2026-05-04 (Day 4 continuation, ~6h elapsed for Target 6)
+- **Target focused:** Target 6 — modexp + alt_bn256 + bn128 (Tier A crypto primitives, ~1.3k LoC)
+- **Targets remaining:** 7 (engine.rs core), 8+ (lower priority)
+- **Submissions:** 0
+- **Patterns codified:** 5 (queued for `_codify-queue.md`)
+- **Outcome:** Target 6 SATURATED — DO NOT REVISIT
+
+### Target 6 — modexp + alt_bn256 + bn128 deep dive results
+
+**Scope breakdown:**
+- `engine-precompiles/src/modexp.rs` (1028 LoC) — 3 hardfork impls (Byzantium/Berlin/Osaka)
+- `engine-precompiles/src/alt_bn256.rs` (622 LoC) — 3 precompiles (Add/Mul/Pair) with Byz/Istanbul costs
+- `engine-sdk/src/bn128.rs` (511 LoC NEW) — dual-impl pattern via `feature = "contract"`
+
+**Pivotal architecture discovery:** bn128.rs uses dual-implementation pattern:
+- `#[cfg(feature = "contract")]` — NEAR host functions (mainnet WASM build)
+- `#[cfg(not(feature = "contract"))]` — ark-bn254 (Arkworks) standalone
+
+**PR #1047 = Library migration `zeropool-bn` → `ark-bn254`** (Dec 11, 2025, Author: Evgeny Ukhanov, Co-author: aleksuss). Shipped in v3.10.0 (Jan 14, 2026), active in mainnet v3.10.1.
+
+**Hypotheses spawned:** 12 across 6 dimensions (gas economics, byte ordering, library migration regression, infinity handling, subgroup checks, config-dormant gating)
+
+**Hypothesis outcome breakdown:**
+
+| ID | Hypothesis | Outcome |
+|---|---|---|
+| H_T6_A | Berlin modexp gas constants ≠ EIP-2565 | KILLED — GQUADDIVISOR=3, MIN_GAS=200 match spec verbatim |
+| H_T6_B | Istanbul alt_bn256 gas ≠ EIP-1108 | KILLED — ADD=150, MUL=6k, PAIR=45k+34k*n match spec |
+| H_T6_C | PR #1047 refactor regression in bn128.rs | KILLED — library migration done correctly, OLD/NEW byte format consistent |
+| H_T6_D | read_fq2 y-before-x ordering ≠ EIP-197 | KILLED — variable naming misleading but Fq2::new(real, imag) math correct |
+| H_T6_E | new_g1_point((0,0)) infinity bypass | KILLED — properly special-cased + on-curve check + subgroup check |
+| H_T6_F | ark-bn254 standalone code path bug | KILLED — config-dormant for mainnet (GATE 6 amplifier — `feature = std` only) |
+| H_T6_G | aurora-engine-modexp external crate misuse | KILLED — defensive coding, mature fix history (PRs #689, #719, #757, #883) |
+| H_T6_H | parse_lengths arithmetic overflow | KILLED — saturating_add + try_from(...).unwrap_or(usize::MAX) defended |
+| H_T6_I | Osaka EIP-7883/7823 wrong constant | DEFERRED — config-dormant (GATE 6, Osaka not active) |
+| H_T6_J | G1/G2 prime-order subgroup check missing | KILLED non-contract path (`is_in_correct_subgroup_assuming_on_curve`); contract path delegates to NEAR (OOS) |
+| H_T6_K | Contract path NEAR-side bug | OOS — NEAR runtime not Aurora's responsibility, can't fix Aurora-side |
+| H_T6_L | Pairing input length validation | KILLED — `% PAIR_ELEMENT_LEN != 0` check correct, empty input → true (matches EIP-197 empty product) |
+| H_T6_M | G2 byte ordering 64-byte reverse asymmetry | KILLED — OLD code (`concat_low_high(real_LE, imag_LE)`) and NEW code (64-byte reverse on EIP-197 `[imag_BE\|real_BE]`) BOTH produce `[real_LE\|imag_LE]`; NEAR zeropool-bn `Fq2::from_slice` expects this format |
+
+**Yield:** 0 valid findings from 13 hypothesis-classes = 0% conversion rate (matches Target 3 secp256r1 outcome).
+
+**Coverage assessment:** Target 6 spec-conformance audit COMPLETE.
+- All EIP-198/EIP-2565 modexp gas formula verified against go-ethereum/erigon implementations
+- All EIP-196/EIP-197 alt_bn256 byte encoding verified across library migration boundary
+- 64-byte reverse trick (compound BE→LE + Fq2 component swap) verified mathematically equivalent to per-element approach + NEAR-format swap
+- Subgroup check coverage (G1: cofactor=1 trivial, G2: explicit `is_in_correct_subgroup_assuming_on_curve` in non-contract path)
+- Aurora wraps `aurora_engine_modexp` external crate as thin shim — near-zero custom logic surface for divergence
+
+**Target 6 = SATURATED post-deep.**
+
+### GATE 6 — Contract Path Mainnet Active (PASS)
+
+- `engine/Cargo.toml:45: contract = ["log", "aurora-engine-sdk/contract", "aurora-engine-precompiles/contract"]`
+- Mainnet WASM build (`cargo build --features contract`) propagates feature to all crates
+- Activates `#[cfg(feature = "contract")]` paths in bn128.rs → NEAR host fn calls
+- **Implication:** bug in contract path = mainnet bug (no config-dormant downgrade for bn128 contract path)
+- Contrast: Targets 3 (secp256r1 Osaka), 5 (native.rs error_refund) hit GATE 6 amplifier
+
+### Test Coverage Gap (process finding, OOS as "best practice")
+
+- `engine-tests/Cargo.toml`: uses `features = ["std"]` for engine-precompiles + engine-sdk
+- `std` feature enables ark-bn254 deps → tests exercise NON-CONTRACT path only
+- `contract` feature NOT activated in unit tests → contract path zero unit-test coverage
+- `alt_bn256_precompiles.rs` comment: "Full EVM state tests has only limited count. As we can't send big bunch of test cases to NEAR VM..."
+- **Implication:** Bugs in contract path (the mainnet path) only catchable via limited integration tests
+- **Severity:** OOS as "best practice critique" per Aurora HackenProof rules; not reportable as standalone finding
+
+### Library Migration Audit Pattern (PR #1047)
+
+**OLD code (zeropool-bn era) host_fn_encode for G2:**
+```rust
+let real_low_LE = self.real().low.to_le_bytes();
+let real_high_LE = self.real().high.to_le_bytes();
+let real = concat_low_high(real_low_LE, real_high_LE);  // [real_LE_32]
+// same for imaginary → [imag_LE_32]
+concat_low_high(real, imaginary)  // → [real_LE_32 | imag_LE_32]
+```
+
+**NEW code (post-PR-1047) for G2 in pairing contract path:**
+```rust
+pair_chunk[G1_LEN..G2_LEN].reverse();  // 64-byte reverse on EIP-197 [imag_BE_32 | real_BE_32]
+// Compound: components swap + each becomes LE → [real_LE_32 | imag_LE_32]
+```
+
+**Both produce identical output: `[real_LE_32 | imag_LE_32]`** ✓ NEAR zeropool-bn `Fq2::from_slice` reads bytes [0..32] as c0=real, [32..64] as c1=imag. Migration preserved consistency.
+
+### EIP-2565 Spec Ambiguity Noted (Pattern T6.5)
+
+EIP-2565 Python pseudocode `(exponent & (2**256 - 1)).bit_length() - 1` suggests LOW 256 bits of exponent. But go-ethereum/erigon/nethermind ALL use HIGH 32 bytes (first bytes in BE encoding). Aurora's implementation matches mainnet (HIGH bytes via `parse_bytes(start + HEADER_OFFSET, min(WORD_SIZE, exp_len), U256::from_big_endian)`). Python pseudocode is misleading; actual mainnet behavior is HIGH bytes. Cross-validation against go-ethereum source = ground truth.
+
+### Saturated areas — DO NOT REVISIT (Target 6)
+
+- All EIP-198/EIP-2565/EIP-7883/EIP-7823 modexp gas formulas (Byzantium/Berlin/Osaka)
+- All EIP-196/EIP-197 alt_bn256 precompiles (Byzantium/Istanbul gas + delegation)
+- bn128.rs full body (511 LoC NEW): read_fq, read_fq2, new_g1_point, new_g2_point, read_g1_point, read_g2_point, read_scalar, encode_g1_point, g1_point_add, g1_point_mul, pairing_check
+- Contract path (NEAR host fn) byte buffer construction (alt_bn128_g1_sum, alt_bn128_g1_scalar_multiple, alt_bn128_pairing)
+- write_reversed_chunk helper (BE→LE + right-padding via initial zero-fill)
+- BN128_SCALAR_ORDER constant (verified BN254 r value)
+- Library migration zeropool-bn → ark-bn254 byte format consistency
+- PR #1047 commit (Dec 11 2025), v3.10.0 release (Jan 14 2026), v3.10.1 active mainnet
+- Test coverage scope (engine-tests std feature, no contract feature in unit tests)
+- aurora-engine-modexp external crate (out-of-scope per workspace exclusions, but Aurora's USAGE pattern verified safe)
+
+### Revisit triggers (Target 6)
+
+- New PR touching bn128.rs / alt_bn256.rs / modexp.rs with custom logic changes
+- Aurora mainnet activates Osaka hard fork → re-evaluate EIP-7883/EIP-7823 paths (currently config-dormant)
+- ark-bn254 crate major version bump (0.5+) introducing API changes
+- NEAR runtime announces alt_bn128 host fn behavior change
+- New crypto precompile added to engine-precompiles (e.g., new pairing curve) requiring SDK extension
+
+### Time-budget tally — Day 4 / Target 6
+
+| Phase | Hours | Output |
+|---|---|---|
+| Phase 0.5 mapping (file metadata + entry points + EIP anchors) | ~2h | 12 hypotheses spawned |
+| Phase 1 batch 1 (PR #1047 diff + bn128.rs full body) | ~2h | 5 hypotheses killed via spec verification |
+| Phase 1 batch 2 (GATE 6 + contract path + library migration verify) | ~2h | 7 remaining hypotheses killed; H_T6_M G2 ordering verified consistent |
+| **Total Target 6** | **~6h** | 0 submissions + 5 patterns codified + saturation lock |
+
+**Aurora cumulative 4 days:** ~19h30m | 1 submission (AU-345 awaiting) | 5 saturated (T2/T3/T4/T5/T6) | 1 deferred (T1) | 1 remaining (T7)
+
+### Patterns codified to `_codify-queue.md` (5 entries)
+
+1. **Library migration byte ordering preservation pattern** — when project migrates crypto crate (e.g., zeropool-bn → ark-bn254), verify Fq2 component ordering preserved across OLD wrapper code (in git history) and NEW code. Useful for L1/L2 EVM forks doing crypto upgrades.
+2. **Conditional compilation test coverage gap pattern** — `#[cfg(feature = "X")]` divergent paths often have asymmetric test coverage. Mainnet build feature (e.g., `contract`) vs test feature (`std`) creates a coverage gap where bugs in mainnet-only path ship undetected. Detection: grep `#[cfg(feature` in crypto/critical-path code, cross-reference test config.
+3. **64-byte compound BE→LE + Fq2 component swap reverse trick** — clever pattern that simultaneously does byte-order conversion AND component swap in one Rust `slice.reverse()` call. Worth flagging in audit reports as obscure pattern requiring careful spec verification. Cross-program: any EVM fork wrapping NEAR/Substrate/other host fn for bn256 pairing.
+4. **NEAR host fn delegation amplifier (severity downgrade)** — when Aurora delegates crypto to NEAR runtime, any NEAR runtime bug propagates to Aurora but Aurora can't fix it. Severity downgrade if root cause is in NEAR (OOS for Aurora bounty). Pattern applies to any L2 wrapping host primitives (Aurora→NEAR, OP→ETH precompile, Polkadot EVM→Substrate).
+5. **EIP-2565 spec ambiguity (Python pseudocode vs mainnet reality)** — EIP-2565 Python pseudocode uses `exponent & (2**256 - 1)` suggesting LOW 256 bits, but ALL mainnet implementations (go-ethereum, erigon, nethermind) use HIGH 32 bytes of exponent encoding. Pattern: when spec pseudocode disagrees with mainnet behavior, mainnet is ground truth. Verify against go-ethereum source for modexp/precompile gas formulas.
+
+### Pipeline state — end of Day 4 / Target 6
+
+- **AWAITING:** AU-345 (passive, triage 3-7d, Day 1 submission)
+- **EXPLORED & SATURATED:** Target 2 (EIP-7702), Target 3 (secp256r1), Target 4 (connector.rs), Target 5 (native.rs), Target 6 (modexp+alt_bn256+bn128)
+- **DEFERRED (config-dormant):** Target 1 (BLS12-381 — Osaka-gated, same as Target 3 secp256r1)
+- **REMAINING (Tier order):** Target 7 (engine.rs core executor — Tier B audited+churned, 625 LoC churned, 104KB total file, est 8-12h)
+- **HackenProof rep:** 138/150 (no submission since Day 1)
+
+### Decision pending: Day 5 target selection
+
+Pre-recommendation: **Target 7 (engine.rs core executor)** as primary if Aurora session continues.
+
+Reasoning:
+- Highest-stakes territory (core EVM executor — gas accounting, state transitions, call frames)
+- Heavily audited (AuditOne 2024 baseline) but heavily churned post-audit (625 LoC delta)
+- Different muscle from Targets 2/3/6 (crypto primitives) and 4/5 (bridge/connector) — focuses on EVM execution semantics
+- Mainnet ACTIVE (no config-dormant gate expected for core executor)
+- Calibrate expectations: Tier B audited base = saturated common patterns; new code paths = fresh surface
+
+Alternative: **Pivot to other pipeline** if Aurora yield fatigue:
+- monetrix-C4 (deadline May 4 — verify timezone)
+- xrpl-sherlock mediation prep (~May 11)
+- stacks-immunefi #76119 passive triage
+- kamino-kliq Immunefi #9665 async
+
+**Aurora yield calibration:** D1=1/9 (T2 EIP-7702), D2=0/12 (T3), D3=0/16 (T4+T5), D4=0/13 (T6) — cumulative 1/50 = 2% promotion rate. Tier S Pectra surface (T2) yielded the only finding; subsequent Tier S/A/B targets all saturated. **Pattern: fresh-Pectra is highest yield zone for this codebase; mature precompiles + audited core are lower yield.**
+
