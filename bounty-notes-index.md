@@ -4487,3 +4487,4 @@ Gas surfpool install + scaffold exploit.
 - Status: Phase 0 MFD complete (2026-05-01) | Tier 1 P1 next: Vault V2 MarketV1AdapterV2
 - Reward: up to $2,500,000 Critical (Markets V1) / $1,500,000 (other SC)
 - Saturation: HEAVY — 27 audits / 12 firms / 843 Cantina submissions since 2024-03
+- aurora-HP AU-345 (May 4 2026) — EIP-7702 intrinsic gas undercharge
