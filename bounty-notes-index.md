@@ -4488,3 +4488,15 @@ Gas surfpool install + scaffold exploit.
 - Reward: up to $2,500,000 Critical (Markets V1) / $1,500,000 (other SC)
 - Saturation: HEAVY — 27 audits / 12 firms / 843 Cantina submissions since 2024-03
 - aurora-HP AU-345 (May 4 2026) — EIP-7702 intrinsic gas undercharge
+
+---
+
+### Aurora — Day 2 / Target 3 closure (2026-05-04)
+
+- File: `aurora/aurora-mapping-summary.md` Section 16
+- Outcome: Target 3 (secp256r1 EIP-7951) SATURATED, 0 submissions, 2 patterns codified
+- Key catch: GATE 6 config-dormant — secp256r1 + BLS12-381 both `new_osaka`-gated, Aurora mainnet on Prague (3.10.1)
+- Target 1 (BLS12-381) DEFERRED until Osaka activation; pivot to Target 4 (connector.rs) next session
+- Pipeline: AU-345 (EIP-7702) AWAITING triage 3-7d
+- Patterns: WASM-EVM Gas Asymmetry + Thin-Review Heuristic (in `_codify-queue.md`)
+
