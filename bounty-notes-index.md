@@ -5521,3 +5521,228 @@ Pattern #13 ("Your Own Math Can Reject You" Reframe) augmented:
 
 ---
 
+# Aurora HackenProof — Fresh Chat Handoff (Post-Closure)
+
+**Date:** 2026-05-04 (session closure)
+**Program:** Aurora Smart Contract HackenProof
+**URL:** https://dashboard.hackenproof.com/user/programs/aurora-smart-contract
+**HackenProof rep:** 140 (target 150)
+**KYC:** DONE, full tier
+
+---
+
+## Pipeline Final State
+
+| Status | Target | Outcome |
+|---|---|---|
+| ✅ INFORMATIVE-CLOSED | T2 EIP-7702 (AU-345) | May 4, +2 rep, no bounty, bug valid bounded-magnitude |
+| 🔒 SATURATED | T3 secp256r1 (Day 2) | 0/12 hypotheses, GATE 6 Osaka-dormant |
+| 🔒 SATURATED | T4 connector.rs (Day 3) | 0/8 hypotheses, audit reframe (external repo OOS) |
+| 🔒 SATURATED | T5 native.rs (Day 3) | 0/8 hypotheses, GATE 6 error_refund lint-only |
+| 🔒 SATURATED | T6 modexp+alt_bn256+bn128 (Day 4) | 0/13 hypotheses, library migration verified |
+| 🔒 SATURATED | T9 eth-contracts Solidity (Day 5) | 0/4 hypotheses, audit-acknowledged + OOS-centralization |
+| 🔒 CLOSED | T11 master-vs-develop diff (Day 5) | No delta, branches already merged |
+| ⏸️ DEFERRED | T1 BLS12-381 | Osaka-dormant, revisit when Osaka activates on mainnet |
+| ⏳ UNRESEARCHED | T7 engine.rs core executor | 8-12h budget, low EV per saturation pattern (Tier B audited+churned trend = 0% yield) |
+| ⏳ UNRESEARCHED | T8 lib.rs entry-point dispatch | 562 LoC churned, low priority |
+| ⏳ UNRESEARCHED | T10 sputnikvm | 14,184 LoC, separate workspace, large cold-start, low priority |
+
+**Cumulative pipeline yield:** 1/54 hypotheses = 1.85% (1 Informative, 0 paid bounty)
+
+**Saturation pattern documented:**
+- Tier S Pectra-fresh (T2 EIP-7702) → 1 finding (AU-345 → Informative)
+- Tier S Osaka-dormant (T1, T3) → 0 (GATE 6 fork-gating)
+- Tier B/A audited+churned (T4/T5/T6) → 0/29
+- Tier "never-audited cold" (T9) → 0/4 (audit-acknowledged + OOS-centralization caught all 4)
+
+---
+
+## Reward Structure & Constraints
+
+| Severity | Range |
+|---|---|
+| Critical | $1K - $300K (capped at 10% TVL) |
+| High | $10K - $100K (10% TVL cap) |
+| Medium | up to $10K |
+| Low | up to $1K |
+
+**Critical payment caveat:** Aurora may pay in AURORA tokens with 1-year linear vesting (not pure USD).
+
+**Eligibility constraints:**
+- First reporter wins
+- Report within 24 hours of discovery
+- Reports exclusively via hackenproof.com
+- Must use HackenProof email (violation = no reward)
+- Detailed PoC + reproduction required
+- HackerOne rep 100 gate = PASSED (rep 140)
+
+**Out-of-scope reminders:**
+- DoS attacks, automated traffic, mainnet/public testnet contracts
+- Best practice critiques (e.g., test coverage gaps = OOS)
+- Third-party systems (NEAR runtime bugs = OOS for Aurora)
+- **Centralization risks, basic governance attacks** (T9 confirmed this kills UpgradeCap-style findings)
+
+---
+
+## Files & Locations (WSL Paths)
+
+### Primary research files
+```
+/mnt/c/Users/USER/bounty-notes/aurora/
+├── aurora-mapping-summary.md              # Phase 0 mapping + Day 1-5 logs
+├── aurora-fresh-chat-handoff.md           # Previous handoff (Day 5 entry, archive)
+├── aurora-d5-codify-scrub.md              # Day 5 closure session log + AU-345 outcome
+├── audits-local/
+│   └── auditone-2024-05-engine-bridge-FINDINGS.md   # Primary audit corpus
+└── repos/
+    ├── aurora-engine/                     # Master + develop branches
+    └── sputnikvm/                         # Separate repo
+```
+
+### Pattern queue + skill management
+```
+/mnt/c/Users/USER/bounty-notes/_codify-queue.md      # Pattern queue (3 AU-345 entries appended)
+/mnt/c/Users/USER/security-intel/bounty-notes-index.md   # PUBLIC mirror
+/mnt/c/Users/USER/bounty-notes/claude-skills/        # .skill backups (v3.0/v1.2/v4.4)
+```
+
+### Repos (in scope per HackenProof program)
+- `aurora-engine` master + develop (engine, engine-precompiles, engine-sdk, engine-transactions, engine-types, etc/eth-contracts)
+- `sputnikvm` (separate workspace, 14,184 LoC, 58 files)
+
+---
+
+## AU-345 Triage Outcome (Reference)
+
+**Verdict:** Closed as **Informative** (May 4, 2026 11:22 PM)
+**Triager:** @HP-Triage0x090
+**Rep impact:** +2 (138 → 140)
+**Bounty:** $0 (below bounty relevance threshold)
+
+**Triager rationale:**
+- Bug merit: ✅ Confirmed valid (real spec deviation, math correct, bounded magnitude correct)
+- Severity reasoning: ❌ Sub-cent per-tx, no user fund extraction, damage on Aurora relayer revenue (protocol-side cost)
+- Closure citation: "As the report itself notes, the bug does not enable direct theft of user funds, permanent freeze, or insolvency, and the per-transaction economic magnitude is bounded"
+
+**Triple lesson codified post-AU-345 (bounty-pre-submit v1.2):**
+1. **Gate 8.6 Impact Explanation & User-Approval** — mandatory enforcement gate before PoC build
+2. **Gate 8.7 Severity-Floor Threshold Check** — magnitude-vs-tier-threshold math
+3. **Meta-Pattern Mantras-vs-Gates** — skill design hygiene rule
+
+Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome section).
+
+---
+
+## Skills Loaded (per memory routing)
+
+| Skill | Version | Use case |
+|---|---|---|
+| `bounty-workflow` | v2.10 | Phase 0.5/0.7/1 dispatch, GATE 6 deployment-state check |
+| `smart-contract-audit-common` | v4.4 | Severity calibration, threat model, UpgradeCap severity-range fix |
+| `smart-contract-audit-evm` | v4.1 | Solidity (eth-contracts), EIP audit patterns, Pectra-era |
+| `batch1-patterns-apr2026` | — | C/C++ blockchain node patterns (applicable to Rust EVM emulator) |
+| `tools-reminder` | v1.7 | Foundry PoC mainnet-fork, X-Ray (where applicable) |
+| `bounty-lessons` | v3.0 | Pattern Universality Gate (5-Q), Codify mechanism, Anti-slop |
+| `bounty-pre-submit` | v1.2 | Gate 0-13 + 8.5/8.6/8.7 + Meta-Pattern (full pre-submit gate ladder) |
+
+**Cold-start gap:** No NEAR-specific skill — NEAR runtime semantics (storage deposit, gas accounting, promise results, XCC) learned in-context per session.
+
+---
+
+## Aurora Pipeline Decision: REVISIT vs PIVOT
+
+### Option A — Aurora session FULLY CLOSED, pivot to next target ⭐ recommended
+
+**Rationale:**
+- Pipeline 1.85% yield (1 Informative, 0 paid) over ~24h research time
+- Saturation pattern confirmed across all 11 targets
+- Remaining T7/T8/T10 = low-EV per saturation trend (8-12h budget, 0% expected yield)
+- HP rep grind needs higher-EV target
+
+**Action:** Pivot pipeline. Aurora moves to PASSIVE WATCH — re-engage only on:
+- New audit publication on aurora.dev/audits
+- Aurora release tag 3.10.2+ (significant code changes)
+- Osaka mainnet activation (T1 BLS12-381 + T3 secp256r1 unblock)
+- HackenProof program scope expansion
+
+### Option B — Continue Aurora T7 engine.rs core executor
+
+**Rationale:**
+- 625 LoC churned post-audit (PR #1018 area)
+- Different muscle from T2/T3/T6 (crypto) and T4/T5 (bridge/connector)
+- Mainnet ACTIVE (no GATE 6 expected)
+
+**Risk:** Tier B audited+churned saturation pattern (0/29 hypotheses across T4/T5/T6) likely repeats. 8-12h investment with low EV.
+
+### Option C — Phase B.3 batch promotion (skill maintenance)
+
+**Rationale:**
+- 33 UNIVERSAL patterns + 3 PLATFORM-COND in queue ready for promotion
+- 6-8h work across 5-7 sessions
+- Skill suite long-term value
+- Low-risk operational work
+
+**Suggested batch order (per `aurora/aurora-d5-codify-scrub.md` Phase B.3 plan):**
+- Batch 3a: sc-audit-common cross-chain (12 patterns) — 1.5-2h
+- Batch 3b: sc-audit-solana NEW Anchor v2 section (5 patterns) — 1-1.5h
+- Batch 3c: sc-audit-evm Pectra/EIP + Synthetix (8 patterns) — 1.5h
+- Batch 3d: bounty-workflow Phase 0.5/0.7/-1 (5 patterns) — 1h
+- Batch 3e: bounty-lessons + bounty-pre-submit (6 patterns) — 1h
+- Batch 3f: Platform-cond (3 patterns) — 30min
+
+---
+
+## Re-Engagement Triggers (when to come back to Aurora)
+
+| Trigger | Action |
+|---|---|
+| Aurora release v3.10.2+ on GitHub | Phase 0.5 mapping refresh, identify churned files post-3.10.1 |
+| New audit publication on aurora.dev/audits | Pattern AS check (Audit-Acknowledged), update `audits-local/` corpus |
+| Osaka hardfork activation on Aurora mainnet | Unblock T1 BLS12-381 + T3 secp256r1 (config-dormant resolves) |
+| Aurora-NEAR connector contract redeployed in scope | T4 connector.rs revisit if scope changes |
+| Major refactor PR (>500 LoC) merged to develop | Quick recon for fresh logic |
+| HP scope expansion (eth-contracts deployments added) | T9 revisit with mainnet-deployment context |
+
+**Passive monitoring:** GitHub watch on `aurora-is-near/aurora-engine` releases + audit publication RSS (if available).
+
+---
+
+## Aurora-Specific Lessons Codified
+
+### GATE 6 amplifier patterns (from Aurora session)
+1. **Hardfork-gating:** Code only registered in `new_osaka` constructor → config-dormant if mainnet on Prague (T3 secp256r1, T1 BLS12-381)
+2. **Lint-only feature flag:** `error_refund` cfg blocks ship in CI lint matrix but NOT in mainnet WASM build (T5 native.rs)
+3. **`feature = "contract"` mainnet active:** bn128.rs contract path verified mainnet (T6 confirmed PASS, NOT dormant)
+
+### Aurora HackenProof OOS patterns (from T9 closure)
+- Centralization risks = explicit OOS clause kills UpgradeCap-style findings
+- "Best practice critiques" = OOS (test coverage, lint findings)
+- External repo dependencies = OOS (aurora-eth-connector outside HackenProof scope)
+
+### Severity-floor calibration data (AU-345 case)
+- Sub-cent per-tx + protocol-revenue recipient = Informative tier (NOT Low/Medium)
+- Self-disclosed bounded magnitude → triage quotes back as closure rationale
+- Bug merit ≠ severity tier — separate threshold check required (Gate 8.7)
+
+---
+
+## Quick Reference
+
+- **HackenProof rep:** 140 (target 150) — need 10 more accepted submissions worth of rep
+- **Audit boundary:** 2024-05-10 (commit 987d8381a1)
+- **Current Aurora version:** 3.10.1 (Jan 23, 2026)
+- **Mainnet hardfork active:** Prague (Pectra-era)
+- **Audit-acknowledged unresolved:** 8 findings (duplicate-risk surface for future research)
+- **Last research session:** May 4, 2026 (Day 5 closure)
+- **Re-engagement check date:** ~30 days post-closure (June 4, 2026) for trigger review
+
+---
+
+**Fresh chat opener (paste at start of next Aurora session):**
+
+> Lanjut Aurora HackenProof. Pipeline state: AU-345 INFORMATIVE-CLOSED (May 4, +2 rep), all targets T1-T11 saturated/closed/deferred. HackenProof rep 140 (target 150). Files: /mnt/c/Users/USER/bounty-notes/aurora/aurora-mapping-summary.md + aurora-d5-codify-scrub.md. Skills: bounty-pre-submit v1.2 (Gate 8.6 mandatory before PoC), bounty-lessons v3.0 (5-Q Universality Gate). Re-engagement decision: cek triggers (release/audit/Osaka/scope) atau pivot ke target lain?
+
+---
+
+*Handoff doc generated: May 4, 2026 (post-Phase A + Phase B.1/B.2 + Gate 8.6/8.7/Meta closure)*
+*Aurora session totals: 5 days research, 24h+ time, 1/54 hypotheses yielded (1 Informative), 3 new gates codified, 33 universal patterns queued for batch promotion*
