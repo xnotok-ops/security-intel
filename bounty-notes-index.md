@@ -397,8 +397,8 @@ Audit a specific protocol type? Upload these files:
 
 # Bounty Notes Index Update — Apr 21, 2026
 
-> Paste/merge section below into `xnotok-ops/security-intel/bounty-notes-index.md`
-> under the `sherlock-xrpl/` section.
+Paste/merge section below into `xnotok-ops/security-intel/bounty-notes-index.md`
+under the `sherlock-xrpl/` section.
 
 ---
 
@@ -507,8 +507,8 @@ Location: `bounty-notes/kamino/prior-audits/sec3/`
 Use case: Gate 5 invalidation cross-check saat T1P2 transfer_ownership session.
 # Base Azul Research Master Map
 
-> **Single source of truth** untuk riset Base Azul Immunefi Audit Competition.
-> Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
+**Single source of truth** untuk riset Base Azul Immunefi Audit Competition.
+Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
 
 **Last updated:** 2026-04-22 (v2 — data-driven revision post-recon)
 **Owner:** xnotok-ops
@@ -668,7 +668,7 @@ All 4 findings Informational, all Fixed:
 
 ## 4. Research Priority Queue — DATA-DRIVEN (v2)
 
-> **Revised from v1** based on recon discoveries. v1 had AggregateVerifier at P1 — data shows this is over-saturated. Actual fresh ground found via Pattern K (git-diff) + Pattern L (temporal proximity).
+**Revised from v1** based on recon discoveries. v1 had AggregateVerifier at P1 — data shows this is over-saturated. Actual fresh ground found via Pattern K (git-diff) + Pattern L (temporal proximity).
 
 ### 🟢 Tier 1 — FRESH GROUND (Target HERE)
 
@@ -756,15 +756,15 @@ grep -rn -i "candidate_phrase" \
 
 **3.1.1 Unconditional Proof Threshold Check in resolve Blocks Normal Bond Recovery When Parent Game Is Invalid** (Informational, Fixed in `dd587c9a`)
 
-> Context: AggregateVerifier.sol#L453
+Context: AggregateVerifier.sol#L453
 >
-> The resolve function in AggregateVerifier enforces the proofCount threshold check unconditionally after the branch that sets status = CHALLENGER_WINS when the parent game is blacklisted, retired, or lost. With the planned upgrade to PROOF_THRESHOLD = 2, a game initialized with only one proof would have resolve revert with NotEnoughProofs, rolling back the status change and leaving the game stuck as IN_PROGRESS.
+The resolve function in AggregateVerifier enforces the proofCount threshold check unconditionally after the branch that sets status = CHALLENGER_WINS when the parent game is blacklisted, retired, or lost. With the planned upgrade to PROOF_THRESHOLD = 2, a game initialized with only one proof would have resolve revert with NotEnoughProofs, rolling back the status change and leaving the game stuck as IN_PROGRESS.
 >
-> Since PROOF_THRESHOLD = 2 requires both a TEE and ZK proof, a second proof can be submitted via verifyProposalProof before calling resolve to satisfy the threshold. The initialization proof already validates the state transition, so the second proof type can be produced and submitted within the 7-day SLOW_FINALIZATION_DELAY window.
+Since PROOF_THRESHOLD = 2 requires both a TEE and ZK proof, a second proof can be submitted via verifyProposalProof before calling resolve to satisfy the threshold. The initialization proof already validates the state transition, so the second proof type can be produced and submitted within the 7-day SLOW_FINALIZATION_DELAY window.
 >
-> **The edge case arises if the second proof cannot be submitted within the 7-day window. For example, if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game is permanently stuck as IN_PROGRESS, the bond is unrecoverable through normal operations and requires admin intervention via DelayedWETH, and child games built on top are also blocked from resolving.**
+**The edge case arises if the second proof cannot be submitted within the 7-day window. For example, if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game is permanently stuck as IN_PROGRESS, the bond is unrecoverable through normal operations and requires admin intervention via DelayedWETH, and child games built on top are also blocked from resolving.**
 >
-> Recommendation: Move the proofCount threshold check and the isChallenged bond recipient reassignment into the else branch so they only apply when the parent game is valid. When the parent is invalid, resolution should proceed directly to CHALLENGER_WINS and mark resolvedAt without requiring the proof threshold to be met.
+Recommendation: Move the proofCount threshold check and the isChallenged bond recipient reassignment into the else branch so they only apply when the parent game is valid. When the parent is invalid, resolution should proceed directly to CHALLENGER_WINS and mark resolvedAt without requiring the proof threshold to be met.
 
 **How to weaponize (Pattern M):**
 - Auditor fix = proofCount check moved to else-branch. Check `git show dd587c9a -- src/multiproof/AggregateVerifier.sol` to understand exact fix scope.
@@ -1451,7 +1451,7 @@ function nullify(
 The attacker only needs to produce **one valid proof of type X** (which they themselves submitted at init) and **one valid proof of type X proving a different intermediate root**. Both proofs pass `_verifyProof()` individually because they cryptographically attest to different execution histories — the "soundness violation" is by construction (the attacker intentionally produced contradictory evidence), not by accident.
 
 Per scope §5 "Roles":
-> - ZK Provers — permissionless SP1-based
+- ZK Provers — permissionless SP1-based
 
 Since ZK proving is permissionless, any attacker can act as ZK prover and produce two conflicting ZK proofs for the same L2 range. Identical logic applies for TEE via multi-enclave / compromised key scenarios, but even ZK alone is sufficient.
 
@@ -1679,7 +1679,7 @@ This test documents the exact economic refund path that makes the attack cost-fr
 
 Cantina multiproof March 2026 audit Finding 3.1.1 ("Unconditional Proof Threshold Check in resolve Blocks Normal Bond Recovery When Parent Game Is Invalid", Informational, marked Fixed at commit `dd587c9a`) concerns a pre-nullify scenario:
 
-> *"if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game [is] permanently stuck as IN_PROGRESS"*
+*"if a soundness issue is discovered in the ZK verifier through another game causing it to be nullified, no ZK proof can ever be submitted. If the parent game is then blacklisted, the child game needs to resolve as CHALLENGER_WINS but proofCount remains at 1. The game [is] permanently stuck as IN_PROGRESS"*
 
 The fix moves the `proofCount < PROOF_THRESHOLD` check into the `else`-branch of `parentGameStatus != CHALLENGER_WINS` at L458, so that CHALLENGER_WINS resolution with an invalid parent game can proceed without the threshold check.
 
@@ -2515,7 +2515,7 @@ When a proposer submits contradictory proofs of their own type (e.g., TEE + TEE)
 
 ### Pattern Q KILL SHOT
 Cantina dev-written test `testClaimCredit_NullifiedGame_After14Days_Succeeds` (audits-local L1093) literally asserts this behavior as `Succeeds` — treating the refund path as an intended feature, not a bug. Triage WILL argue:
-> "This is the documented and tested bond recovery path. The proposer posted 1 ETH bond that gets locked for 14 days as penalty for a soundness alert. This is not theft, it is a punitive delay + admin review mechanism."
+"This is the documented and tested bond recovery path. The proposer posted 1 ETH bond that gets locked for 14 days as penalty for a soundness alert. This is not theft, it is a punitive delay + admin review mechanism."
 
 ### Reframe angles (for revival)
 - **Angle A:** "Missing whistleblower reward" — whistleblower who catches soundness violation gets nothing despite spending gas + time; economic incentive to detect is broken.
@@ -2677,8 +2677,8 @@ Sec3 X-Ray ran as third audit layer post-initial-closure. 20 findings, 0 promote
 - Topaz Dex PDF
 # Kamino Research Master Map (v3)
 
-> **Single source of truth** untuk riset Kamino Immunefi bug bounty.
-> Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
+**Single source of truth** untuk riset Kamino Immunefi bug bounty.
+Fresh chat next session cukup paste handoff block (Section 9) → langsung dispatch tanpa re-discover.
 
 **Last updated:** Apr 29, 2026
 **Owner:** xnotok-ops (Notok)
@@ -4499,4 +4499,15 @@ Gas surfpool install + scaffold exploit.
 - Target 1 (BLS12-381) DEFERRED until Osaka activation; pivot to Target 4 (connector.rs) next session
 - Pipeline: AU-345 (EIP-7702) AWAITING triage 3-7d
 - Patterns: WASM-EVM Gas Asymmetry + Thin-Review Heuristic (in `_codify-queue.md`)
+
+
+---
+### Aurora — Day 3 closure (Targets 4 & 5 saturated, 2026-05-04)
+
+- File: `aurora/aurora-mapping-summary.md` Section 17
+- Outcome: Target 4 connector.rs SATURATED (audit-anchored fixes on separate aurora-eth-connector repo, OOS), Target 5 native.rs SATURATED + CONFIG-DORMANT amplifier #2 on HN8 (`error_refund` feature lint-only, not in mainnet WASM)
+- 0 submissions, 5 patterns codified
+- Day 3 time: ~4h10m | Aurora cumulative: ~13h30m
+- Pipeline: AU-345 awaiting triage; HackenProof rep 138/150
+- Day 4 pivot: Target 6 (modexp + alt_bn256) — mainnet active, EIP-2565 wrong-constant territory
 
