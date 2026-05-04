@@ -4511,3 +4511,136 @@ Gas surfpool install + scaffold exploit.
 - Pipeline: AU-345 awaiting triage; HackenProof rep 138/150
 - Day 4 pivot: Target 6 (modexp + alt_bn256) — mainnet active, EIP-2565 wrong-constant territory
 
+
+
+## [2026-05-04] — FrankSol (Solana Audit Arena W4) — Pattern AS: PnL Sign Inversion vs Documented Spec
+
+- **Code location**: `withdraw_from_yield.rs:76-82` — `if pnl >= 0 { total_sol -= gain } else { total_sol += loss }`
+- **Documented spec** (PROGRAM_GUIDE.md sec 7): "Yield: increase total_sol → frankSOL price appreciates" / "Loss: decrease total_sol"
+- **Mechanism**: Implementation does OPPOSITE of documentation. On positive yield, pool's tracked total_sol shrinks below physical vault → siluman over-collateralized + frankSOL holders dirampas yield. On loss, total_sol inflates above actual SOL → insolvency on last unstakers.
+- **Detection rule**: SELALU baca PROGRAM_GUIDE.md / NatSpec / inline doc-comments line-by-line VS implementation. Documented invariants are the ground truth — code that contradicts = critical bug. Use `grep -E "increase|decrease|appreciate|depreciate"` di docs, then verify operator (+/-) di code.
+- **Severity**: CRITICAL (direct fund value loss to all token holders)
+- **Skill destination**: sc-audit-solana (cross-doc-code verification methodology) + sc-audit-common (LST PnL accounting pattern)
+
+## [2026-05-04] — FrankSol — Pattern AT: Permissionless Yield Drain via Shared APY Vault (Ponzi)
+
+- **Code location**: `yield_generator/instructions/deposit.rs` (any signer = operator) + `withdraw.rs` (operator-only auth)
+- **Mechanism**: APY 10% paid from yield_vault. Any user calls deposit → wait → withdraw → gets principal + 10% reward. Reward dibayar dari vault yang shared dengan stake_v2's deployed funds. Capital-intensive tapi unbounded value extraction dari stake_v2 users.
+- **Trust model gap**: yield_generator marketed as "external strategy" tapi gak verifikasi caller program (no allowlist for stake_v2). 
+- **Detection rule**: Any program advertising fixed APY paid from shared vault TANPA external income source = ponzi. Check: (1) who can call entry points? (2) where does APY income come from? (3) is vault shared between trusted callers and untrusted?
+- **Severity**: CRITICAL/HIGH (direct fund extraction pathway)
+- **Skill destination**: sc-audit-solana (Solana yield aggregator pattern) + sc-audit-common (yield-strategy trust model assessment)
+
+## [2026-05-04] — FrankSol — Pattern AU: Anchor v2 Manual CPI Account-Order Discipline
+
+- **Code location**: `yield_generator/lib.rs` `cpi::accounts::Deposit/Withdraw` — `to_instruction_accounts()` impl
+- **Mechanism**: Anchor v2 (`anchor-next`) DOES NOT auto-generate CPI clients. Caller must hand-write CPI module dengan `to_instruction_accounts()` yang return InstructionAccount list dalam ORDER YANG SAMA dengan callee's `#[derive(Accounts)]` struct. Wrong order = silent account mismatch (account types still pass per-position validation but semantic meaning shifted).
+- **Detection rule**: Compare `cpi::accounts::X` field order vs callee's `pub struct X` field order. SETIAP account harus position-match. Run grep `to_instruction_accounts` dan cross-check dengan callee struct definition.
+- **Migration notes (A6)** explicitly warn: "Getting this wrong causes silent account mismatches"
+- **Severity context**: bug class is HIGH-CRITICAL kalau positions terbalik (e.g., source/destination swap)
+- **Skill destination**: sc-audit-solana (NEW Anchor v2 section — manual CPI patterns)
+
+## [2026-05-04] — FrankSol — Pattern AV: `init` Constraint Insufficient vs PDA Prefund DoS
+
+- **Code location**: `initialize.rs:54` — `if vault.account().data_len() == 0` then create else error
+- **Mechanism**: Manual `data_len() == 0` check protects against pre-allocated DATA but NOT against pre-funded LAMPORTS. `system::create_account` fails when target has lamports > 0. Attacker prefunds PDA with system::transfer (lamports go up, data_len stays 0) → init's create_account fails → permanent DoS.
+- **Anchor's `#[account(init)]` has same vulnerability** — uses system::create_account internally.
+- **Detection rule**: Cek setiap PDA initialization path. Test: bisa attacker `system::transfer` 1 lamport ke target PDA address sebelum init? Kalau iya AND init pakai `create_account` (bukan `allocate + assign`), DoS exists.
+- **Mitigation**: Use `allocate + transfer + assign` pattern instead, or explicitly check & rebate prefunded lamports.
+- **Severity**: HIGH (permanent DoS untuk specific PDA initialization)
+- **Skill destination**: sc-audit-solana
+
+## [2026-05-04] — FrankSol — Pattern AW: Anchor v2 ConstraintDuplicateMutableAccount on Duplicated Address
+
+- **Code location**: `unstake.rs:30-34` — fee_recipient_1 dan fee_recipient_2 KEDUANYA constrained `address = pool.fee_recipients[1].pubkey` (copy-paste, harusnya [2])
+- **Mechanism**: Two `#[account(mut)]` slots bound to SAME pubkey value. User wajib pass same address twice. Anchor v2's `ConstraintDuplicateMutableAccount` rejects duplicate writable account refs. Result: instruction PERMANENTLY fails — DoS, not just fee misallocation.
+- **Detection rule**: `grep -E "address = pool\." -A1` dan look for SAME RHS dipakai di multiple `#[account(mut)]` slots. Kalau ada, instruction always-fails di Anchor v2.
+- **Bug class is more severe than "fee misallocation"** — actual manifestation is full DoS karena ConstraintDuplicateMutableAccount fires before fee logic runs.
+- **Severity**: CRITICAL (permanent unstake DoS) — even though many auditors framed it as MEDIUM (fee diversion)
+- **Skill destination**: sc-audit-solana (NEW Anchor v2 section)
+
+## [2026-05-04] — FrankSol — Pattern AX: LST Share Math Operation-Order Inversion (div-then-mul antipattern)
+
+- **Code location**: `utils.rs:20-24` — `(sol_in / total_sol) * supply` instead of `(sol_in * supply) / total_sol`
+- **Mechanism**: Integer division truncates intermediates. Whenever `sol_in < total_sol`, division returns 0 → result = 0 → `InvalidAmount` error → DoS. When `sol_in >= total_sol`, truncation causes value loss (user mints fewer shares than fair pro-rata).
+- **Asymmetry**: `franksol_to_sol` di same file CORRECT (mul-first). Asimetri = strong red flag for accidental refactor.
+- **Detection rule**: Untuk SETIAP proportional share calc (`x * y / z`), verify operator order. SELALU mul before div di u128 intermediate. Cross-check inverse function (e.g., `share_to_asset` vs `asset_to_share`) — keduanya harus consistent direction.
+- **Verifies via**: simple Python/Rust test dengan small inputs (sol_in=1, total_sol=2, supply=2 should give 1, buggy gives 0).
+- **Severity**: HIGH-CRITICAL (DoS untuk all stakers post-bootstrap)
+- **Skill destination**: sc-audit-common (LST/ERC4626-style share math patterns) + sc-audit-solana (utility function audit)
+
+## [2026-05-04] — FrankSol — Pattern AY: token::authority Absent → Mint Redirection State Desync
+
+- **Code location**: `stake.rs:30-34` — `user_franksol_ata` only has `token::mint = X`, NO `token::authority = user`
+- **Mechanism**: User dapat pass any TokenAccount yang mintnya match. Mint CPI minted to that account. user_position.franksol_balance state bertambah, tapi actual frankSOL ada di other account (attacker's ATA). State desync: virtual balance ≠ real balance.
+- **Combined with blacklist freeze**: Admin freezes user's ATA, tapi mint sudah redirected → blacklist ineffective.
+- **Detection rule**: Untuk SETIAP `Account<TokenAccount>` di Anchor account struct, verify BOTH `token::mint` AND `token::authority` constraints present (kalau intent = user-owned). If hanya mint constraint → flag.
+- **Anti-pattern signature**: `Account<TokenAccount>` dengan single `token::mint` constraint dan no authority check
+- **Severity**: LOW-MEDIUM (state desync, blacklist evasion vector)
+- **Skill destination**: sc-audit-solana (Anchor token account constraint checklist)
+
+## [2026-05-04] — FrankSol — Pattern AZ: Open Initialize → Frontrun Authority Capture
+
+- **Code location**: `yield_generator/initialize.rs:11` — `pub payer: Signer` (any signer) + `state.authority = *payer.address()`
+- **Mechanism**: Initialize is permissionless. First caller (frontrunner) becomes authority. Authority controls config (set_yield_direction). Trust model broken — protocol expected admin to be the initializer, but anyone wins the race.
+- **Detection rule**: SETIAP initialize-once instruction yang assigns authority — check (1) signer constraint pinned ke deterministic identity (e.g., hardcoded admin pubkey via address constraint, multisig, governance PDA)? (2) Or trust deferred to first-caller (race-condition)? Latter = always finding.
+- **Mitigation pattern**: `#[account(address = HARDCODED_ADMIN)] pub admin: Signer` or use deterministic PDA derivation tied to existing trusted state.
+- **Severity**: HIGH (privilege escalation via frontrun)
+- **Skill destination**: sc-audit-common (init authority patterns, chain-agnostic)
+
+## [2026-05-04] — FrankSol — Pattern BA: Admin Role Rotation During Inflight State Freezes Funds
+
+- **Code location**: `admin.rs:73-82` (`set_fund_manager`) + `deploy_to_yield.rs:25-30` (yield_position keyed by current fund_manager)
+- **Mechanism**: yield_position PDA seeds = `[POSITION_SEED, fund_manager.address()]`. After fund_manager_A deploys X SOL, position_A exists keyed by A. Admin rotates to fund_manager_B. fund_manager_A locked out (auth check fails di withdraw). fund_manager_B has no position. **Position_A's funds permanently orphaned di yield_vault**.
+- **Detection rule**: SETIAP admin role rotation function (`set_admin`, `set_fund_manager`, `set_authority`) — check inflight state: any PDA seeds atau ownership tags using current admin's pubkey? If yes, rotation breaks recovery path. Need (1) two-step rotation (propose + accept), atau (2) drain-before-rotate guard.
+- **Mitigation**: Add invariant check di set_fund_manager: `require(pool.deployed_sol == 0)` atau require explicit migration step.
+- **Severity**: MEDIUM-HIGH (operational fund freeze, admin-recoverable only with key recovery)
+- **Skill destination**: sc-audit-common (admin role rotation patterns)
+
+## [2026-05-04] — FrankSol — Pattern BB: Slippage Check on Pre-Fee Gross Value (Antipattern)
+
+- **Code location**: `unstake.rs:85-86` — `user_sol_out = sol_out - total_fee`; `require!(sol_out >= min_sol_out, ...)` (uses gross sol_out)
+- **Mechanism**: `min_sol_out` parameter user-supplied for slippage protection. Check uses GROSS pre-fee value, not NET user-received value. Up to 5% silent loss kalau admin sets max fee. User mengira terlindung tapi tidak.
+- **Detection rule**: Untuk SETIAP `min_X_out` slippage parameter, trace nilai final yang user actually receive vs nilai yang dicheck. Slippage harus check VALUE-USER-RECEIVES, bukan intermediate gross.
+- **Anti-pattern signature**: `min_X_out` checked sebelum fee deduction or against gross amount
+- **Severity**: MEDIUM (slippage protection broken, partial loss)
+- **Skill destination**: sc-audit-common (slippage check patterns, chain-agnostic — applies EVM too)
+
+## [2026-05-04] — FrankSol — Pattern BC: CPI Target Program Address Validation Asymmetry
+
+- **Code location**: `deploy_to_yield.rs:40` (`address = yield_generator::id()` ✓) vs `withdraw_from_yield.rs:35` (NO address constraint ✗)
+- **Mechanism**: Asymmetric validation between two related CPI sites. deploy validates program ID, withdraw doesn't. Attacker (fund_manager) bisa pass fake program ID di withdraw → CPI calls untrusted code → returns "0 SOL transferred" → `vault_after == vault_before` → pnl = -principal_returned (loss). Per PnL inversion bug, total_sol inflates → pool insolvency.
+- **Detection rule**: SETIAP function yang make CPI ke external program — verify `address = X::id()` constraint exists di yield_generator_program / target_program account. Cross-check: kalau program A makes CPI to program B di two instructions, BOTH instructions harus pin program B's address consistently.
+- **Audit checklist**: `grep -B2 "Program<.*>" *.rs | grep -v "address ="` untuk find unpinned program accounts.
+- **Severity**: HIGH (allows arbitrary CPI redirection by privileged role)
+- **Skill destination**: sc-audit-solana
+
+## [2026-05-04] — FrankSol — METHODOLOGY: Public Race-Format Bounty Strategy
+
+- **Context**: Solana Audit Arena Week 4 — public GitHub Issues, first-finder wins, -1 spam penalty, 7-day window
+- **Saturation rate observed**: 36 unique issues di 1.2k LOC = 1 finding per 33 LOC dalam <12 jam. TIER 1 bugs (criticals + obvious highs) sapu bersih dalam 6 jam pertama oleh top researchers (@novoyd, @Leihyn, @EFCCWEB3, @Stoicov, @0xsophon).
+- **Lesson**: Untuk format race-public bounty, masuk telat 12 jam = 0 first-finder. ROI submit = 0 points + spam risk. **Strategy harus monitoring + dedicated 4-6h slot Monday morning UTC**, ATAU skip dan focus pipeline lain.
+- **Detection of saturation**: kalau cek issues page udah ada >20 unique findings di codebase <2k LOC → fully picked → abandon further deep dive untuk save energy.
+- **Codebase coverage check FIRST**: Before any deep dive on public-issues bounty, check existing submissions count. Calculate findings/LOC ratio. Above 1/50 = saturated.
+- **Pre-Phase-0 addition**: For race-format bounties, mandatory step before Phase 0.5 = "Existing submissions check" — fetch issues page, map known territory, set scope to gaps only.
+- **Skill destination**: bounty-workflow (NEW Phase -1 / Pre-Phase 0 step for race-format) + bounty-lessons (rejection-history-style entry: "Solana Audit Arena W4 — 12h late entry, 0/10 hipotesis first-finder")
+
+## [2026-05-04] — FrankSol — METHODOLOGY: PROGRAM_GUIDE / Spec-First Reading
+
+- **Observation**: PROGRAM_GUIDE.md mendokumentasikan invariants yang code violates (e.g., "Yield: increase total_sol" while code subtracts). Direct spec-vs-code mismatch = critical bug pointer.
+- **Lesson**: Sebelum baca implementation files, ALWAYS baca dulu: (1) PROGRAM_GUIDE / NatSpec / README invariants section, (2) inline doc-comments yang describe formulas, (3) test files yang assert expected behavior. Mismatch antara doc/test dengan code = high-confidence bug.
+- **Pattern queue capture**: extract documented formulas verbatim (e.g., "frankSOL_out = sol_in × supply / total_sol"), then grep code untuk implementation, compare operator order/sign/precedence char-by-char.
+- **Test-as-spec signal**: kalau ada test yang `assert_eq!` value yang implementation-baru gak akan menghasilkan, itu indicator bahwa bug introduced AFTER test was written. Strong red flag.
+- **Phase 0.5 enhancement**: tambah step "doc-vs-code invariant cross-check" sebelum manual instruction walkthrough. Speeds up critical bug discovery.
+- **Skill destination**: bounty-workflow (Phase 0.5 spec-first step) + bounty-lessons (PROGRAM_GUIDE.md reading discipline)
+
+---
+
+**Session metadata:**
+- Date: 2026-05-04
+- Program: FrankSol (Solana Audit Arena Week 4) by @0xcastle_chain
+- LOC analyzed: 1,203 nSLOC (stake_v2 + yield_generator)
+- Anchor version: v2 (`anchor-next` branch)
+- Hypothesis count: 10 (all duped — 0 first-finder)
+- Skill update target: sc-audit-solana v4.2 (Anchor v2 section), sc-audit-common v4.3, bounty-workflow v3.0 (Phase -1 race-format pre-check), bounty-lessons v2.7 (race-format + spec-first)
+- Status: Skipped submission, codified patterns for skill update post-Monday May 11 (after Frank's results).
