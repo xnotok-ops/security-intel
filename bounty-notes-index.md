@@ -5798,3 +5798,16 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - Audit corpus Emissions: ZERO audits, ZERO Certora — purely informational contracts (no funds at risk)
 - OZ H-01 multicall reentrancy inapplicable (URD has no Multicall; Emissions Multicall + non-payable safe)
 - Cumulative Morpho saturation: 20/45 scope items, 265 hyp 0 actionable, 6 saturasi berturut-turut
+
+
+## 2026-05-05 — Morpho Bundlers Legacy Saturation (P7) + Pipeline PAUSE
+
+- File: `bounty-notes/morpho/manual-mapping-P7-bundlers-legacy-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit (7 scope items: EthereumBundlerV2 + EthereumBundler V1 + ChainAgnosticBundlerV2 + 5 migration bundlers)
+- Hypotheses: 30 tested, 0 actionable
+- Audit corpus: 4 firms + Certora Protected.spec
+- Critical fix verified: OZ H-01 multicall reentrancy drain fixed via PR #313+#354 (protected modifier)
+- 9 of 13 Cantina Comp Medium findings target legacy bundlers, all FIXED
+- Cumulative Morpho saturation: 27/45 scope items (60 percent), 295 hyp 0 actionable, 7 saturasi berturut-turut
+- PIPELINE PAUSED untuk Morpho — resume next session ke Metamorpho v1.1 atau pivot OUT
