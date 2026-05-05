@@ -5811,3 +5811,25 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - 9 of 13 Cantina Comp Medium findings target legacy bundlers, all FIXED
 - Cumulative Morpho saturation: 27/45 scope items (60 percent), 295 hyp 0 actionable, 7 saturasi berturut-turut
 - PIPELINE PAUSED untuk Morpho — resume next session ke Metamorpho v1.1 atau pivot OUT
+
+## Aurora HackenProof — Day 5 Extended Closure (May 5, 2026)
+
+User-directed re-entry to sweep untouched-surface on Aurora HackenProof program. T7 engine.rs core executor + T9 eth-contracts Solidity + T-admin upgrade governance Rust-side swept comprehensively.
+
+**Outcome:** All three remaining surfaces saturated.
+- T7 GATE 6 type-3 dormancy confirmed: develop-only-unreleased Pectra surface, mainnet 3.10.1 pre-Cancun verified via tag-ancestry analysis (Cancun #926 + EIP-3607 #930 reverted between rc.1→3.10.0; Prague #988 + EIP-7702 fix #1112 in NO tag).
+- T9 audit-acknowledged at Gate 4: Slither suppressions throughout EvmErc20/V2 + Aurora's PR #1009 `set_erc20_fallback_address` as alternative recovery infrastructure + 4-year audit-stable pattern.
+- T-admin sweep saturated: consistent auth pattern across 76 extern "C" entry points + 7 contract_methods/ files. No missing access control gaps. Post-tag fix-density confirms develop-only forward-looking work.
+
+**Cumulative Aurora effort:** ~50 hypotheses across 8 surfaces, 1 finding (AU-345 Informative, +2 rep no bounty), ~25-30h. Yield rate ~0% bounty.
+
+**Patterns codified to `_codify-queue.md` (3 universal patterns):**
+1. Develop-branch-dormancy in bug bounty scope
+2. Defensive-gap conditional on admin pause action
+3. Post-tag fix-density signal for develop-only dormancy
+
+**Aurora pipeline FULLY CLOSED** with passive watch triggers documented (new release tag 3.10.2+, hardfork mainnet activation, audit publication, scope expansion).
+
+**Files updated this session:** `aurora/aurora-mapping-summary.md` (Day 5 extended closure log), `_codify-queue.md` (3 universal patterns).
+
+---
