@@ -5767,3 +5767,13 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - Audit corpus: Cantina-managed (1 firm), 1 Medium + 4 Low + 7 Info, ALL Acknowledged/AS
 - Certora coverage: 0 specs (significant gap, no actionable surfaced)
 - Cumulative Morpho saturation: 16/45 scope items, 206 hyp 0 actionable
+
+## 2026-05-05 — Morpho Public Allocator Saturation (P4)
+
+- File: `bounty-notes/morpho/manual-mapping-P4-puballoc-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit
+- Hypotheses: 30 tested, 0 actionable
+- Audit corpus: Cantina-managed (1 firm), 1 Medium + 4 Low + 7 Info, ALL Acknowledged/AS
+- Certora coverage: 0 specs (significant gap, no actionable surfaced)
+- Cumulative Morpho saturation: 16/45 scope items, 206 hyp 0 actionable
