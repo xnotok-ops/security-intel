@@ -5810,3 +5810,14 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - 9 of 13 Cantina Comp Medium findings target legacy bundlers, all FIXED
 - Pattern transfer high vs Bundler3 P2 (functional patterns identical)
 - Cumulative Morpho saturation: 27/45 scope items (60
+## 2026-05-05 — Morpho Bundlers Legacy Saturation (P7) + Pipeline PAUSE
+
+- File: `bounty-notes/morpho/manual-mapping-P7-bundlers-legacy-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit (7 scope items: EthereumBundlerV2 + EthereumBundler V1 + ChainAgnosticBundlerV2 + 4 migration bundlers; 5 incl AaveV3Optimizer)
+- Hypotheses: 30 tested, 0 actionable
+- Audit corpus: 4 firms (Cantina-managed Nov 2023 + OZ Nov 2023 + Cantina Comp Jan 2024 + Cantina-managed Mar 2024) + Certora Protected.spec
+- Critical fix verified: OZ H-01 multicall reentrancy drain fixed via PR #313+#354 (protected modifier on all action functions)
+- 9 of 13 Cantina Comp Medium findings target legacy bundlers, all FIXED
+- Pattern transfer high vs Bundler3 P2 (functional patterns identical)
+- Cumulative Morpho saturation: 27/45 scope items (60
