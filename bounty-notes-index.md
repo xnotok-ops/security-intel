@@ -5755,3 +5755,5 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - Hypotheses: 20 tested, 0 actionable
 - Audit corpus: Spearbit + ABDK + Cantina contest, 0 findings >= Low across all firms
 - Cumulative Morpho saturation: 15/45 scope items, 176 hyp 0 actionable
+
+[NOTE 2026-05-05] Tracker re-pushed setelah fix ownership issue — entry di atas sekarang point ke tracker yang valid (commit baru di bounty-notes).
