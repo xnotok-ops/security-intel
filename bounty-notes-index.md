@@ -5746,3 +5746,12 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 
 *Handoff doc generated: May 4, 2026 (post-Phase A + Phase B.1/B.2 + Gate 8.6/8.7/Meta closure)*
 *Aurora session totals: 5 days research, 24h+ time, 1/54 hypotheses yielded (1 Informative), 3 new gates codified, 33 universal patterns queued for batch promotion*
+
+## 2026-05-05 — Morpho Pre-Liquidation Saturation (P3)
+
+- File: `bounty-notes/morpho/manual-mapping-P3-prelig-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit
+- Hypotheses: 20 tested, 0 actionable
+- Audit corpus: Spearbit + ABDK + Cantina contest, 0 findings >= Low across all firms
+- Cumulative Morpho saturation: 15/45 scope items, 176 hyp 0 actionable
