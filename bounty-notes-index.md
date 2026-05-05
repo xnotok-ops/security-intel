@@ -5787,3 +5787,14 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - Audit corpus: Spearbit Sep 2025 (1 Low + 2 Info ALL Acknowledged) + Certora Dec 2025 (registry-clean)
 - Cross-finding observation: Certora L-01/L-02/I-02 target vault-v2 adapter (MorphoMarketV1AdapterV2) burnShares/timelock - all Pattern AS, noted but not reopening P1
 - Cumulative Morpho saturation: 17/45 scope items, 231 hyp 0 actionable
+
+## 2026-05-05 — Morpho Rewards Joint Saturation (P6)
+
+- File: `bounty-notes/morpho/manual-mapping-P6-rewards-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit (3 scope items closed: URD Factory + Market Rewards Program Registry + Rewards Emission Data Provider)
+- Hypotheses: 34 tested, 0 actionable
+- Audit corpus URD: 3 firms (Cantina-managed Nov 2023 + OpenZeppelin Nov 2023 + Cantina Comp Jan 2024) + 2 Certora specs
+- Audit corpus Emissions: ZERO audits, ZERO Certora — purely informational contracts (no funds at risk)
+- OZ H-01 multicall reentrancy inapplicable (URD has no Multicall; Emissions Multicall + non-payable safe)
+- Cumulative Morpho saturation: 20/45 scope items, 265 hyp 0 actionable, 6 saturasi berturut-turut
