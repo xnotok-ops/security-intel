@@ -5777,3 +5777,13 @@ Full outcome analysis: `aurora/aurora-d5-codify-scrub.md` (AU-345 Triage Outcome
 - Audit corpus: Cantina-managed (1 firm), 1 Medium + 4 Low + 7 Info, ALL Acknowledged/AS
 - Certora coverage: 0 specs (significant gap, no actionable surfaced)
 - Cumulative Morpho saturation: 16/45 scope items, 206 hyp 0 actionable
+
+## 2026-05-05 — Morpho adapter-registries Saturation (P5)
+
+- File: `bounty-notes/morpho/manual-mapping-P5-adapter-registries-saturation.md`
+- Updated: `bounty-notes/morpho/morpho-scope-investigation-tracker-v2.md`
+- Status: SATURATED, do-not-revisit (closes PARTIAL state from P1)
+- Hypotheses: 25 tested, 0 actionable
+- Audit corpus: Spearbit Sep 2025 (1 Low + 2 Info ALL Acknowledged) + Certora Dec 2025 (registry-clean)
+- Cross-finding observation: Certora L-01/L-02/I-02 target vault-v2 adapter (MorphoMarketV1AdapterV2) burnShares/timelock - all Pattern AS, noted but not reopening P1
+- Cumulative Morpho saturation: 17/45 scope items, 231 hyp 0 actionable
