@@ -5833,3 +5833,437 @@ User-directed re-entry to sweep untouched-surface on Aurora HackenProof program.
 **Files updated this session:** `aurora/aurora-mapping-summary.md` (Day 5 extended closure log), `_codify-queue.md` (3 universal patterns).
 
 ---
+# Bucket Protocol V2 — Research Mapping (Master)
+
+**Program:** Bucket Protocol V2 Smart Contracts
+**Platform:** HackenProof (Hidden Gem, STRICT class)
+**Stack:** Sui blockchain / Move language
+**Repo:** https://github.com/hackenproof-public/bucket-protocol (invite-only, 151 invitees)
+**Created:** 2026-05-05
+**Owner:** xnotok-ops
+**Linked files:** `scope-official.md`, `bucket-architecture-map.md`
+
+---
+
+## 1. Program Overview
+
+| Field | Value |
+|---|---|
+| Bounty range | $10 – $500K (Critical $100K–$500K) |
+| Total paid to date | $3,500 across 184 submissions |
+| Submitter:invitee ratio | 184:151 ≈ 1.2 |
+| Notok HP rep | 140 → 150 target (afford max 1 NA) |
+| KYC | Done |
+| PoC | Mandatory + runnable |
+| Triage | HackenProof team |
+| Strategic posture | Cautious: prefer 0 submission over speculative NA |
+
+---
+
+## 2. GitHub Repositories
+
+| Repo | Status | Purpose |
+|---|---|---|
+| `hackenproof-public/bucket-protocol` | INVITE-ACCESS ✅ | Curated audit version |
+| Bucket Protocol public repo | TBD | Compare deployed vs invite version (drift detection) |
+| Bucket V1 (if exists) | TBD | Pattern reference: V2 design changes from V1 |
+| `pantheraudits/move-auditor` | EXTERNAL | Sui/Move pattern library reference |
+
+**Action items:**
+- [ ] Clone invite repo: `git clone https://github.com/hackenproof-public/bucket-protocol.git`
+- [ ] Check for `audits/` or `reports/` folder in repo (Sub-step D inventory)
+- [ ] Search for Bucket Protocol public deployment + compare addresses
+- [ ] Check Bucket V2 changelog (V1 → V2 migration notes)
+
+---
+
+## 3. Audit Coverage Map (TBD — fill after Sub-step D)
+
+| Auditor | Date | Components covered | Findings | Repo path |
+|---|---|---|---|---|
+| ? | ? | bucket_framework | ? | ? |
+| ? | ? | bucket_usd | ? | ? |
+| ? | ? | bucket_oracle | ? | ? |
+| ? | ? | bucket_cdp | ? | ? |
+| ? | ? | bucket_psm | ? | ? |
+
+**Sui/Move auditor candidates to check:**
+- OtterSec
+- MoveBit
+- Zellic
+- Verichains
+- BlockSec (some Sui coverage)
+- CertiK (some Sui coverage)
+
+**Wishlist Recon targets (for Pattern AS check):**
+- Cetus exploit (overflow custom math)
+- Thala exploit (reward accumulator after balance change)
+- KriyaDEX exploit (CLMM tick precision)
+- Liquity / Maker (CDP+PSM model on EVM — pattern parallels)
+- Search Sherlock, Cantina, Code4rena for prior Sui CDP/PSM audits
+
+---
+
+## 4. Research Priority Queue
+
+Status legend: 🔴 not started · 🟡 in progress · 🟢 confirmed (PoC ready) · ⚫ killed (false positive) · ❌ OOS · 💎 promote to submission
+
+### Tier 1 — High-EV, non-privileged, novel angle
+
+| ID | Hypothesis | Module | Sui/Move pattern ref | Status | Priority |
+|---|---|---|---|---|---|
+| **T1.1** | **Witness pattern abuse on mint<M>()** — if M ability requirements weak (only `drop`), attacker creates type with `drop` ability and calls mint with arbitrary amount up to module supply | `bucket_usd` | SUI-03 | 🔴 | P0 |
+| **T1.2** | **Oracle outlier detection bypass via 2-extreme submissions** — submit 2 valid prices at outlier_tolerance boundary; weighted average skewed; outlier filter passes because prices are individually within tolerance | `bucket_oracle` | Custom (CDP+Oracle convergence) | 🔴 | P0 |
+| **T1.3** | **CDP→Oracle→PSM convergence: pump-and-mint** — manipulate oracle price upward (within tolerance), open CDP at inflated collateral value, mint USDB > true backing → protocol insolvency | `bucket_oracle` + `bucket_cdp` | T1.2 prerequisite | 🔴 | P0 |
+| **T1.4** | **PSM round-trip extraction via decimal scaling** — `swap_in(asset)` then `swap_out(USDB)` in same PTB; if decimal scaling rounds favorably, net positive coin output | `bucket_psm` | Generic AMM rounding | 🔴 | P0 |
+| **T1.5** | **Position locker permanent grief** — `position_locker.add(addr)` at request, `remove(addr)` at response. If response can be dropped/discarded without consuming, position permanently locked = permanent freeze | `bucket_cdp` | SUI-09 hot potato | 🔴 | P1 |
+| **T1.6** | **Liquidation rounding favors liquidator over protocol** — slow drain via repeated tiny liquidations on dust positions; especially during interest accrual moments | `bucket_cdp` | Cetus/Thala arithmetic | 🔴 | P1 |
+| **T1.7** | **Permissionless partner registration with 0% fee** — if `partner_fee_configs.add(addr, FeeConfig{0,0})` callable by anyone, attacker registers self as partner, then trades fee-free vs default fee | `bucket_psm` | Access control gap | 🔴 | P1 |
+| **T1.8** | **First/dust position interest explosion** — Position with 1 wei collateral or near-zero debt; interest_rate * elapsed * tiny_principal → division/multiplication edge in Double precision; potential underflow or rounding asymmetry | `bucket_cdp` | Cetus precision | 🔴 | P2 |
+| **T1.9** | **`Debt<T>` ability annotation: drop = obligation discard** — if `Debt<T>` struct has `drop` ability, holder can let it go out of scope without settlement → CDP debt evaporates | `bucket_framework` | Object model fundamentals | 🔴 | P0 |
+| **T1.10** | **`Credit<T>` ability annotation: copy = value duplication** — if `Credit<T>` has `copy`, holder can duplicate to claim 2x | `bucket_framework` | SUI-03 spirit | 🔴 | P0 |
+| **T1.11** | **PSM dual-accounting desync** — `Pool.balance.value()` vs `Pool.balance_amount` invariant break; any path that updates one without the other → state lies; pumped `balance_amount` = inflated USDB minting in `swap_in` | `bucket_psm` | Custom invariant | 🔴 | P1 |
+| **T1.12** | **Liquidation iterates LinkedTable + removes during loop** — if `liquidate_all()` style function exists, mutation during traversal can skip positions → liquidation incompleteness or invariant break | `bucket_cdp` | LinkedTable + Move | 🔴 | P2 |
+| **T1.13** | **Oracle weight_threshold bypass via fake source** — if PriceCollector accepts arbitrary TypeName as rule source, attacker registers source with controlled weight; aggregate threshold met with spoofed weight | `bucket_oracle` | Type confusion | 🔴 | P1 |
+| **T1.14** | **PSM "dynamic exchange rate" — swap_in/swap_out asymmetry** — README claims "dynamic exchange rate adjustment". If swap_in uses `oracle_price * (1-fee)` and swap_out uses different formula, asymmetry exploitable | `bucket_psm` | README smell #2 | 🔴 | P1 |
+
+### Tier 2 — Medium-EV, requires PoC effort, possibly known
+
+| ID | Hypothesis | Module | Status |
+|---|---|---|---|
+| T2.1 | Compound interest formula edge: timestamp = 0 first deposit | `bucket_cdp` | 🔴 |
+| T2.2 | `donor_request()` front-run — donor repays then attacker claims released collateral | `bucket_cdp` | 🔴 |
+| T2.3 | `Position.copy + drop` abilities cause stale-state write | `bucket_cdp` | 🔴 |
+| T2.4 | PSM `usdb_supply` vs Treasury per-module supply desync (double accounting) | `bucket_psm` + `bucket_usd` | 🔴 |
+| T2.5 | PSM partner_fee precedence — if FeeConfig validation weak, fee_bps > 10000 (negative net) | `bucket_psm` | 🔴 |
+| T2.6 | Oracle staleness — last update timestamp not checked at consumption | `bucket_oracle` + `bucket_cdp` | 🔴 |
+| T2.7 | LinkedTable add without exists check → DoS on duplicate position address | `bucket_cdp` | 🔴 |
+| T2.8 | Vault `limited_supply: LimitedSupply` exhausted → DoS on new debt requests | `bucket_cdp` | 🔴 |
+| T2.9 | Sheet ability/abuse (`Sheet<T, BucketV2PSM>` — undocumented framework primitive) | `bucket_framework` + `bucket_psm` | 🔴 |
+| T2.10 | Float vs Double conversion rounds in attacker's favor | `bucket_framework` | 🔴 |
+
+### Tier 3 — Low-EV, parking lot
+
+| ID | Hypothesis | Note |
+|---|---|---|
+| T3.1 | Event field truncation (sources vector exceeds field count) | low impact |
+| T3.2 | UpgradeCap centralization | OOS likely on HP (privileged action) |
+| T3.3 | Unverified imported framework dependencies | OOS per scope |
+
+---
+
+## 5. Research Status Matrix
+
+| ID | Phase 0 (read) | Phase 0.5 (manual map) | Phase 1 (deep dive) | Phase 2 (PoC) | Submission |
+|---|---|---|---|---|---|
+| T1.1 | 🔴 | — | — | — | — |
+| T1.2 | 🔴 | — | — | — | — |
+| T1.3 | 🔴 | — | — | — | — |
+| T1.4 | 🔴 | — | — | — | — |
+| T1.5 | 🔴 | — | — | — | — |
+| T1.6 | 🔴 | — | — | — | — |
+| T1.7 | 🔴 | — | — | — | — |
+| T1.8 | 🔴 | — | — | — | — |
+| T1.9 | 🔴 | — | — | — | — |
+| T1.10 | 🔴 | — | — | — | — |
+| T1.11 | 🔴 | — | — | — | — |
+| T1.12 | 🔴 | — | — | — | — |
+| T1.13 | 🔴 | — | — | — | — |
+| T1.14 | 🔴 | — | — | — | — |
+
+---
+
+## 6. Known Issues & Exclusions
+
+**OOS per scope:**
+- Theoretical without PoC
+- Compiler version issues
+- Imported contract vulns
+- Code style / redundant code / gas optimization / best practice
+- Front-run-only
+
+**OOS likely per HP STRICT class:**
+- AdminCap-gated exploits (Privileged Action Downgrade)
+- UpgradeCap centralization (admin-trusted in HP default)
+- Donation-cost-exceeds-extraction patterns (no-profit griefing → Medium max)
+
+**TBD — fill after audit history fetch:**
+- Audit-acknowledged symptoms (run Pattern AS check before submission)
+
+---
+
+## 7. Submission Gate Pre-Check
+
+Before any T1.x hypothesis advances to submission, run `bounty-pre-submit` Levels 1–5 (full Gate 0–13). HackenProof-specific:
+- HP severity ladder (Critical = direct theft / perm freeze / gov manip / insolvency / mint-burn ONLY)
+- Theft of unclaimed → HIGH not Critical
+- Temporary freeze → HIGH not Critical
+- Oracle manip without direct theft → HIGH not Critical
+- Privileged Action filter — non-privileged attacker must be feasible
+- Sui-specific PoC: `sui move test` + Devnet/Testnet deployment
+
+---
+
+## 8. Session Log
+
+| Date | Phase | Activity | Outcome |
+|---|---|---|---|
+| 2026-05-05 | Phase 0 | Scope + rules + architecture capture, Tier 1/2/3 queue built (14 T1 hypotheses) | Mapping complete; ready for Phase 0.5 |
+
+---
+
+## 9. Next Session Handoff
+
+**Next session start (Phase 0.5):**
+1. Clone repo: `git clone https://github.com/hackenproof-public/bucket-protocol.git`
+2. Inventory: `find . -name "*.move" -type f | xargs wc -l | sort -n`
+3. Decide depth strategy:
+   - <2k LoC → full read
+   - 2k–5k LoC → entry points + state-changing functions + trust boundaries
+   - \>5k LoC → critical modules only (`bucket_cdp` + `bucket_oracle` + `bucket_psm`); skip `bucket_framework` peripheral
+4. Run pre-flight greps from architecture map (per-module section)
+5. **Hard cap: 4 hours.** Beyond cap, partial mapping is acceptable input to Phase 1.
+6. Starting hypothesis triage:
+   - T1.1 + T1.9 + T1.10 = ability annotation grep pass (5 min, maybe instant kill)
+   - T1.2 + T1.13 = oracle source code review (60 min)
+   - T1.4 + T1.11 + T1.14 = PSM swap math walkthrough (60 min)
+   - T1.5 + T1.6 + T1.12 = CDP liquidation deep dive (90 min)
+   - T1.7 = partner registration grep (5 min)
+
+**Stop conditions for Phase 0.5:**
+- All P0 hypotheses cleared (kill or promote to Phase 1) — proceed to Phase 1 on survivors
+- 4h cap hit — accept partial, proceed to Phase 1 on best survivor
+- Audit history fetch reveals all P0 hypotheses are Audit-Acknowledged Symptoms — abort program
+
+---
+
+## 10. Quick Reference
+
+**Critical paths to audit first (P0):**
+- `bucket_framework/sources/credit.move` (or wherever Credit/Debt defined) — ability annotations
+- `bucket_usd/sources/treasury.move` — `mint<M>` witness type signature
+- `bucket_oracle/sources/aggregator.move` — outlier detection ordering
+- `bucket_psm/sources/pool.move` — swap_in/swap_out math + partner registration
+- `bucket_cdp/sources/vault.move` — position_locker lifecycle, liquidation logic
+
+**Sui/Move audit toolset:**
+- `sui move test` — unit test PoC
+- `sui client publish/call` — Devnet/Testnet PoC
+- `pantheraudits/move-auditor` — pattern library reference (143 attack vectors)
+- Manual review primary; no Sui equivalent of pashov x-ray (skip Phase 0.7)
+
+**Pre-flight grep batch (run first thing in Phase 0.5):**
+```bash
+cd bucket-protocol/v2-move-contracts/
+
+# Ability check (T1.1, T1.9, T1.10)
+grep -rn "struct Credit\|struct Debt" --include="*.move"
+grep -rn "has copy\|has drop\|has store" bucket_framework/
+
+# Witness pattern (T1.1)
+grep -rn "fun mint\|fun burn\|fun collect\|fun claim" bucket_usd/
+grep -rn "_witness: M\|witness: M" bucket_usd/
+
+# Oracle math (T1.2, T1.13)
+grep -rn "outlier\|tolerance\|weighted" bucket_oracle/
+grep -rn "rule_type\|RuleType\|TypeName" bucket_oracle/
+
+# CDP liquidation (T1.5, T1.6, T1.12)
+grep -rn "fun liquidate\|liquidation" bucket_cdp/
+grep -rn "position_locker" bucket_cdp/
+grep -rn "LinkedTable" bucket_cdp/
+
+# PSM math (T1.4, T1.7, T1.11, T1.14)
+grep -rn "fun swap_in\|fun swap_out" bucket_psm/
+grep -rn "partner_fee_config" bucket_psm/
+grep -rn "balance_amount\|usdb_supply" bucket_psm/
+```
+
+---
+
+## 11. Decision Framework
+
+**Continue investing in this program if:**
+- ≥1 P0 hypothesis survives Phase 0.5 grep + read pass
+- No fatal Audit-Acknowledged Symptom intercept
+- Sui/Move LoC manageable in 4h cap
+
+**Pivot/park if:**
+- All P0 dies on first-pass grep (ability annotations correct, witness pattern sound, oracle math correctly orders outlier-then-aggregate)
+- Audit history reveals 5+ prior auditors covered same vectors with no findings → diminishing returns
+- LoC >10k → re-evaluate scope reduction or skip
+
+**Hard skip immediately if:**
+- Any P0 hypothesis is explicitly mentioned as known issue / acknowledged in published audit
+- HackenProof rules updated to OOS one of the T1 vectors
+
+---
+
+## 12. Pivot Triggers (per "selama kesempatan belum 0, gas terus")
+
+- **Hard deadline:** none stated; rolling program
+- **Soft deadline:** 4h Phase 0.5 cap; if no P0 survivor, park (don't quit before deadline, but don't sunk-cost either)
+- **Budget reset:** if Phase 1 yields 1 strong candidate, Phase 2 PoC budget = 8h max before Pre-Submit Gate run
+
+---
+
+## 13. Pattern Codify Candidates (for `_codify-queue.md`)
+
+Patterns observed during this Phase 0 worth promoting to skill files:
+
+### Pattern BUCK-1: "Dynamic exchange rate" smell on PSMs
+**Origin:** Bucket V2 PSM README claim
+**Heuristic:** PSMs in mature protocols (Maker, Liquity) are 1:1 with deterministic fee. The phrase "dynamic exchange rate adjustment" or oracle-dependent PSM pricing is unusual and indicates oracle dependency leak. **Treat oracle-dependent PSM as merged-attack-surface with the CDP that shares oracle.**
+**Target skill:** `sc-audit-common` (oracle principles section) or `sc-audit-evm` (Liquity/Maker patterns reference for PSM design baseline)
+
+### Pattern BUCK-2: Dual-accounting invariant flag
+**Origin:** Bucket V2 PSM Pool struct has both `balance: Balance<T>` and `balance_amount: u64`
+**Heuristic:** Whenever a struct stores both an actual `Balance<T>` (or equivalent) AND a separate `u64`/cached value mirror, EVERY mutation site must update both. Grep for asymmetric updates. Common bug: `balance.join()` without bumping `balance_amount`, or vice versa. Same applies to `total_supply: u64` shadowing `Supply<T>`.
+**Target skill:** `sc-audit-common` (cross-chain invariant maintenance) or chain-specific (Move uses this pattern frequently)
+
+### Pattern BUCK-3: TypeName-keyed config map collision
+**Origin:** Bucket V2 Treasury `module_config_map: VecMap<TypeName, ModuleConfig>`
+**Heuristic:** When a config map is keyed by `TypeName`, examine: (a) what types canonically resolve to which `TypeName`, (b) can attacker create a type whose `TypeName` collides with privileged module types (deploy at a controlled address namespace), (c) what happens on upgrade if module type changes (orphaned old config).
+**Target skill:** `sc-audit-common` Sui/Move section
+
+### Pattern BUCK-4: Outlier detection circular logic
+**Origin:** Bucket V2 Oracle "weighted average + outlier filter"
+**Heuristic:** Outlier detection that uses the (potentially poisoned) aggregate as the reference for "what counts as outlier" is circular — attacker submits two extreme prices that individually pass the relative-distance test but collectively skew the aggregate. Audit ordering: filter-then-aggregate (correct) vs aggregate-then-filter (vulnerable).
+**Target skill:** `sc-audit-common` (oracle principles) — generalizable across chains
+
+### Pattern BUCK-5: Hot-potato locker permanent-freeze grief
+**Origin:** Bucket V2 CDP `position_locker: VecSet<address>` paired with request/response hot potato
+**Heuristic:** When a re-entrancy guard is implemented as "add at request, remove at response", and request/response is a hot-potato pattern, audit: can request be issued without response being consumed? If yes (e.g., response has any drop/discard path), locker entry orphaned → permanent freeze of victim's position.
+**Target skill:** `sc-audit-common` Sui/Move section (extends SUI-09)
+
+---
+
+## 14. Changelog
+
+| Version | Date | Note |
+|---|---|---|
+| 1.0 | 2026-05-05 | Initial mapping. Phase 0 complete. 14 T1 hypotheses, 10 T2, 3 T3. 5 codify candidates. Ready for Phase 0.5 manual mapping. |
+
+---
+
+*MFD Phase 0 sub-step E (master mapping) — generated per `bounty-workflow` v2.9 spec.*
+*HackenProof STRICT class severity calibration applied throughout Tier 1 prioritization.*
+*Sui/Move pattern refs from `sc-audit-common` v4.3 + pantheraudits/move-auditor.*
+# Bucket Protocol V2 — Mapping Addendum: bucket_flash Module
+
+**Created:** 2026-05-05 (post-clone)
+**Trigger:** `bucket_flash` module discovered in repo, NOT documented in README
+**Append to:** `bucket-research-mapping.md` after section 4 (Tier 1 queue)
+
+---
+
+## ⚠️ Scope Drift Signal
+
+The README only documents 5 modules (framework, usd, oracle, cdp, psm). The cloned repo contains a **6th module: `bucket_flash`** with `config.move` (199 LoC) + tests (264 LoC).
+
+**Implications:**
+1. **Documentation gap** = areas potentially less-audited / less-reviewed by prior bounty hunters
+2. **Flash loans on CDP+PSM protocol** = canonical attack-amplification primitive (Aave-class compounding bugs)
+3. **Updates Tier 1 priority** — convergence attacks (T1.3) become FAR more feasible without attacker capital requirement
+4. **README transparency check** — verify if Bucket public docs mention flash loans; if not, this might be unreleased feature → check deployment status (Phase 0 GATE 6 Deployment-State Check)
+
+---
+
+## New Tier 1 Hypotheses (Flash Module)
+
+| ID | Hypothesis | Sui/Move ref | Priority |
+|---|---|---|---|
+| **T1.15** | **Flash loan amplifies oracle manipulation** — borrow large USDB via flash, swap on DEX to skew price oracle within tolerance, exploit CDP collateral revaluation OR PSM swap rate, repay flash. Convergence attack with T1.2/T1.3 amplified ×capital | `sc-audit-common` flash loan + oracle | **P0** |
+| **T1.16** | **FlashReceipt ability annotation: drop/store/copy = repayment skip** — if hot potato has any ability beyond zero-ability, repayment enforcement breaks. SUI-09 direct application | SUI-09 | **P0** |
+| **T1.17** | **Flash repayment missing pool_id check** — `flash_receipt.pool_id == object::id(pool)` validation absent → cross-pool flash exploit (borrow from pool A, "repay" to pool B receipt) | `sc-audit-common` Sui/Move section line 377 | **P0** |
+| **T1.18** | **Flash + PSM round-trip amplification** — T1.4 amplified: flash USDB → swap_out asset → swap_in back; rounding gain × flash leverage = scaled extraction in single PTB | T1.4 amplification | **P1** |
+| **T1.19** | **Flash + liquidation cascade** — borrow, suppress oracle (if any oracle source attacker-controlled), liquidate healthy positions at attacker's prices, repay | Convergence T1.6 | **P1** |
+| **T1.20** | **Flash USDB bypasses Treasury supply limit** — if flash mints USDB temporarily without consuming module supply allocation, attacker can flash-mint > module cap; verify enforcement at mint-during-flash | `bucket_usd` interaction | **P1** |
+
+---
+
+## Updated Pre-Flight Grep (flash module)
+
+```bash
+# Flash hot potato ability check
+grep -rn "FlashReceipt\|FlashLoan\|FlashPotato" bucket_flash/sources/
+
+# Repayment validation
+grep -rn "fun repay\|fun flash\|object::id(\|pool_id" bucket_flash/sources/
+
+# Hot potato consumption pattern (must be destructure, not field-read)
+grep -rn "let .* { .* } =" bucket_flash/sources/
+
+# Cross-module interaction with USDB Treasury
+grep -rn "treasury::\|Treasury\|mint\|burn" bucket_flash/sources/
+
+# Cross-module interaction with oracle
+grep -rn "oracle::\|aggregator\|price" bucket_flash/sources/
+
+# Configuration surface
+cat bucket_flash/sources/config.move | head -100
+```
+
+---
+
+## Convergence Map Update
+
+```
+                    ┌─── bucket_flash ────┐
+                    │  (loans, no capital  │
+                    │   requirement)       │
+                    └──────┬──────────────┘
+                           │ amplifies
+                           ▼
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │   CDP Vault  │←──│ bucket_oracle│──→│   PSM Pool   │
+   └──────┬───────┘   └──────────────┘   └──────┬───────┘
+          │                  ▲                  │
+          │                  │                  │
+          └──────► attacker can manipulate ◄────┘
+                  with flashed capital,
+                  no upfront stake
+```
+
+**Strategic implication:** the **single highest-EV finding** in this codebase is likely a **flash + oracle + (CDP or PSM)** convergence chain. Solo findings on individual modules → likely Medium/High. Convergence chain with quantified end-impact → **Critical territory** ($100K-$500K range).
+
+---
+
+## Updated Module Reading Order
+
+Insert `bucket_flash/sources/config.move` (199 LoC, 30 min) at position **#2** in reading order, immediately after `liability.move` and before `sheet.move`. Rationale: flash module size is small + understanding flash semantics early informs subsequent module reads (especially PSM and CDP).
+
+---
+
+## Updated Decision Framework
+
+**Continue if:** ≥1 P0 hypothesis (T1.1, T1.2, T1.3, T1.9, T1.10, T1.15, T1.16, T1.17) survives Phase 0.5 grep.
+
+**Park if:** flash module is admin-gated (only Treasury can issue flash) AND all other P0 dies. HP STRICT class downgrades admin-gated flash to Medium-or-skip.
+
+---
+
+*Append-only addendum per Notok workflow conventions. Promote findings to mapping main file after Phase 0.5 confirms or kills.*
+
+---
+
+## CLOSURE NOTE (2026-05-05)
+
+**Final verdict: PROGRAM PARKED — codebase clean.**
+
+Phase 1 deep dive complete across all 5 clusters (Oracle, PSM, CDP, Flash, USDB).
+27 hypotheses tested → 19 killed, 5 parked (admin-trust/config-dormant), 0 submitted.
+
+Move type system enforces invariants kuat di seluruh protocol:
+- Hot potato zero-ability pattern: UpdateRequest, UpdateResponse, FlashMintReceipt
+- Witness M + TypeName registration: admin-gated module identity
+- Per-module supply caps di Treasury
+- Protocol-favorable rounding consistent
+
+
+Park items butuh deployment recon (T1.14, T1.24) atau admin compromise (T1.2, T1.45).
+HP STRICT class + Privileged Action Downgrade Rule akan dismiss park items pada submission.
+
+Notok HP rep 140 → 150 budget protected. Tidak ada NA-risk burn dari program ini.
+
+**Codify candidates promoted**: BUCK-1 to BUCK-9 (chain-agnostic + Sui/Move-specific).
