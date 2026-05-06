@@ -7308,3 +7308,48 @@ COMMITS         : security-intel e9240e2, bounty-notes 8c35f45 + 1662535
 *Final Inventory generated 2026-05-05 by Phase 1 Cluster Loop closure ritual.*
 *Future-self trigger: when balik ke Bucket Protocol, START HERE before any source read.*
 *Codify pending: BUCK-1 to BUCK-9 di `bounty-notes/_codify-queue.md` for batch skill promotion.*
+
+## [2026-05-05] — Paladin Pre-Audit Checklist (Twitter @0xPaladinSec) — Plamen AI Auditor
+- **Source:** https://twitter-thread.com/t/2051521408661135802 ; https://github.com/PlamenTSV/plamen
+- **Severity:** N/A (tool, not pattern)
+- **Pattern:** Verified-PoC AI auditor framework. 15-95 agents across 8 phases. Refuses to report findings it can't prove on runnable test. EVM/Solidity primary.
+- **Why generic:** ✅ Universal AI tool, EVM-Solidity scoped. Distinct from Pashov solidity-auditor (broad signal) and sec3 X-Ray (LLVM-IR static). Triple-validator stack candidate.
+- **Skill target:** tools-reminder v1.9 Decision Rule 19 + bounty-workflow v3.4 Tier A Cross-Link
+- **Status:** MIGRATED-v1.9-same-session
+
+## [2026-05-05] — Paladin Pre-Audit Checklist — marchev/awesome-ai-web3-security
+- **Source:** https://github.com/marchev/awesome-ai-web3-security (Paladin checklist citation)
+- **Severity:** N/A (meta-catalog repo)
+- **Pattern:** Awesome-list style meta-catalog of AI Web3 security tools. Distinct from `marchev/claudit` (auditor tool) and `pashov/ai-web3-security` (Pashov hub).
+- **Why generic:** ✅ Discovery resource, EVM/Solana scope. Browse-only.
+- **Skill target:** tools-reminder v1.9 footer reference (no decision rule)
+- **Status:** MIGRATED-v1.9-same-session
+
+## [2026-05-05] — Paladin Pre-Audit Checklist — 2025 exploit case anchors (5 cases)
+- **Source:** https://twitter-thread.com/t/2051521408661135802
+- **Severity:** Mixed — case anchors for severity calibration reference
+- **Pattern:** Five fresh 2024-2025 exploit cases with mechanism detail:
+  - **Cork Protocol May 2025 ($12M)** — fake market with DS reused as RA; CorkHook.beforeSwap missing caller validation + cross-market check + reserve swap slippage. Token validation gap class.
+  - **Balancer V2 Nov 2025 ($128M, 9 chains)** — `_upscaleArray` rounding asymmetry (mulDown upscale vs inconsistent divUp/divDown downscale) compounded inside batchSwap to deflate StableMath D invariant. Audited 2021 but ComposableStablePool added post-scope.
+  - **Cetus Sui May 2025 ($223M)** — `checked_shlw` overflow guard compared 0xFFFFFFFFFFFFFFFF<<192 instead of 0x1<<192. Move bit-shift permitted-overflow. Audited by 3 firms.
+  - **GMX V1 Jul 2025 ($42M white-hat)** — GLP vault reentrancy: mint+stake GLP, open short from inside vault before ShortsTracker updated avg short price, manipulate AUM+GLP price. White-hat, full return for 10% bounty.
+  - **Polter Finance Nov 2024 ($12M)** — Forked from Geist no audit. ChainlinkUniV2Adapter combined Chainlink price with Uniswap V2 reserve ratio. Flash-loaned BOO out of SpookySwap → perceived BOO price ~$1.37T per token.
+- **Why generic:** ✅ Each case anchors a different bug class — deferred codify until audit context activates the relevant class
+- **Skill target:** sc-audit-evm (Cork, Balancer V2, Polter) / sc-audit-move-stack (Cetus) / sc-audit-evm read-only reentrancy (GMX V1)
+- **Status:** PENDING-REVIEW — promote when audit context matches (e.g., Curve fork → Balancer V2; Sui Move audit → Cetus)
+
+## [2026-05-05] — Paladin Pre-Audit Checklist — OWASP SC Top 10 (2025) ranking + $ figures
+- **Source:** https://scs.owasp.org/sctop10/archive/2025/Top10:2025/ ; Paladin checklist
+- **Severity:** N/A (severity calibration reference, not rule)
+- **Pattern:** 2025 ranking shifts: AC #1 ($953M, was #4 2023), Oracle #2, Logic #3 (was #7), Input Validation #4 (NEW), Reentrancy #5 (was #1). Proxy/Upgrade NEW for 2026.
+- **Why generic:** ⚠️ Universality Gate Q4 FAIL — OWASP severity ranking ≠ platform calibration (HP/Sherlock/C4 each have own severity rules). Industry context only, not rule.
+- **Skill target:** NONE (do not codify as rule)
+- **Status:** REJECTED-by-Universality-Gate — keep as reading reference, don't codify
+
+## [2026-05-05] — Paladin Pre-Audit Checklist — Cat 1-11 vulnerability patterns
+- **Source:** https://twitter-thread.com/t/2051521408661135802
+- **Severity:** N/A (existing skill body coverage check)
+- **Pattern:** 11 categories with 30+ specific checks (access control / input validation / reentrancy / oracle / token / upgrade / economic / composability / signatures / deployment / DoS).
+- **Why generic:** Cross-checked against existing skill suite — 80%+ already covered in sc-audit-evm + sc-audit-common + sc-audit-solana
+- **Skill target:** NONE
+- **Status:** REJECTED-duplicate — coverage already exists. Skip codify to avoid bloat.
