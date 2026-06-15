@@ -32,8 +32,9 @@ Consolidated reference of PUBLIC audit report collections for cross-reference du
 
 ### 3. Accretion — Audit Reports (NEW 2026-04-24)
 
+**Catalog:** `security-intel/prior-audit-corpus-accretion.md` (21 reports indexed, 2024–2026)
 **URL:** `https://github.com/accretion-xyz/audit-reports`
-**Format:** GitHub-hosted markdown reports (cloneable)
+**Format:** GitHub-hosted PDF reports at repo root (cloneable)
 **Focus:** Solana DeFi + Rust programs
 **Discovery source:** Frank Castle Mar 22 2026 roadmap thread
 **Cross-reference pattern:**
@@ -47,9 +48,10 @@ git clone https://github.com/accretion-xyz/audit-reports ~/audit-corpora/accreti
 
 ### 4. Frank Castle — Public Audits (NEW 2026-04-24)
 
+**Catalog:** `security-intel/prior-audit-corpus-frankcastle.md` (29 reports indexed; Solana + cross-chain + EVM)
 **URL:** `https://github.com/Frankcastleauditor/public-audits`
-**Format:** GitHub-hosted (cloneable)
-**Focus:** Solana + Rust, 50+ reports by Frank Castle (Pashov Audit Group senior, Cantina, Spearbit)
+**Format:** GitHub-hosted PDFs under `reports/` (cloneable)
+**Focus:** Solana + Rust + cross-chain, 29 reports by Frank Castle (Pashov Audit Group senior, Cantina, Spearbit)
 **Discovery source:** Frank Castle Mar 22 2026 roadmap thread
 **Cross-reference pattern:**
 - Same-author finding style reference (heuristic diversity)
@@ -114,5 +116,5 @@ done
 
 ---
 
-*Last updated: 2026-04-24*
+*Last updated: 2026-06-15 (added dedicated catalogs: prior-audit-corpus-accretion.md + prior-audit-corpus-frankcastle.md)*
 *Sources: Frank Castle Mar 22 roadmap thread + existing security-intel archive*
